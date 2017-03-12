@@ -1,9 +1,13 @@
 #include "main.h"
 
 /******************************************************************************/
-#define LED0             (1 << 20)                                       /* LED - P0.20                  */
-#define LED1             (1 << 21)                                       /* LED - P0.21                  */
+#define GPIO_LED1	(1 << 17)//LED1 P0.17
+#define GPIO_LED2	(1 << 18)//LED2 P0.18
+#define GPIO_LED3	(1 << 19)//LED3 P0.19
 #define GPIO_BEEP	(1 << 12)//beep P0.12
+
+#define GPIO_M0		(1 << 7)//RF_CTL1 P0.7
+#define GPIO_M1		(1 << 8)//RF_CTL2 P0.8
 
 
 
@@ -66,17 +70,24 @@ uart_t uart0;
 
 void GPIOInit (void);
 void gpio_ctrl(uint32_t gpio, uint32_t value);
-void gpio_init_beep(void);
+void gpio_dir(uint32_t gpio, uint32_t dir);
 
+void gpio_init_beep(void);
+void gpio_init_led(void);
+void gpio_init_rf433m_mode(void);
 
 
 void hwapi01_beep_crtl(u8 on_off);
-
+void hwapi02_led1_ctrl(u8 on_off);
+void hwapi02_led2_ctrl(u8 on_off);
+void hwapi02_led3_ctrl(u8 on_off);
+void hwapi03_rf433m_mode(u8 mode);
 
 
 
 void test_hwapi01_beep_crtl(void);
-
+void test_hwapi02_led_ctrl(void);
+void test_hwapi03_rf433m_mode(void);
 
 /******************************************************************************/
 
@@ -131,13 +142,9 @@ void GPIOInit (void)
     LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 6);                              /* 初始化GPIO AHB时钟           */
 	LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 7);                              /* 初始化SWM  AHB时钟           */
 
-    //LPC_GPIO_PORT->DIR[0] |=  LED0;                                      /* 将P0.20方向设置为输出        */
-    //LPC_GPIO_PORT->PIN[0] |=  LED0;                                      /* P0.20输出设置为高            */
-
-	//LPC_GPIO_PORT->DIR[0] |=  LED1;
-	//LPC_GPIO_PORT->PIN[0] |=  LED1;
-
 	gpio_init_beep();
+	gpio_init_led();
+	gpio_init_rf433m_mode();
 
 #if 0
 
@@ -179,8 +186,8 @@ void UART0SendDisable(void)
 void UART0Init (void)
 {
     LPC_SWM->PINASSIGN[0] &= ~( 0xFFFF << 0 );
-    LPC_SWM->PINASSIGN[0] |=  ( 4 << 0 );                               /* P0.4 ~ UART0_TXD             */
-    LPC_SWM->PINASSIGN[0] |=  ( 0 << 8 );                               /* P0.0 ~ UART0_RXD             */
+    LPC_SWM->PINASSIGN[0] |=  ( 6 << 0 );                               /* P0.0 ~ UART0_RXD rf433m recv */
+    LPC_SWM->PINASSIGN[0] |=  ( 0 << 8 );                               /* P0.6 ~ UART0_TXD rf433m send */
     
     LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
     LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 14);                             /* 初始化UART AHB时钟           */
@@ -208,25 +215,14 @@ void gpio_ctrl(uint32_t gpio, uint32_t value)
 		LPC_GPIO_PORT->PIN[0] |=  gpio;
 }
 
-void led0_on(void)
+void gpio_dir(uint32_t gpio, uint32_t dir)
 {
-	gpio_ctrl(LED0, GPIO_LOW);
+	if (dir == GPIO_INPUT)
+		LPC_GPIO_PORT->DIR[0] &= ~gpio;
+	if (dir == GPIO_OUTPUT)
+		LPC_GPIO_PORT->DIR[0] |=  gpio;
 }
 
-void led1_on(void)
-{
-	gpio_ctrl(LED1, GPIO_LOW);
-}
-
-void led0_off(void)
-{
-	gpio_ctrl(LED0, GPIO_HIGH);
-}
-
-void led1_off(void)
-{
-	gpio_ctrl(LED1, GPIO_HIGH);
-}
 
 
 void uart0_sendbuf(u8* buf, u16 size) 
@@ -270,10 +266,10 @@ void UART0_IRQHandler (void)
 void uart0_thread(void)
 {
 	if (uart0.rflag == 1){
-		myDelay(10);//waiting until the packet done
+		//myDelay(10);//waiting until the packet done
 		
 
-		#if 0
+		#if 1
 		//debug
 		uart0_sendbuf(uart0.rbuf, uart0.rindex);
 		CLEAR_UART(&uart0);
@@ -289,7 +285,7 @@ void uart0_thread(void)
 
 void gpio_init_beep(void)
 {
-	LPC_GPIO_PORT->DIR[0] |=  GPIO_BEEP;
+	gpio_dir(GPIO_BEEP, GPIO_OUTPUT);
     gpio_ctrl(GPIO_BEEP, GPIO_LOW);
 }
 
@@ -302,10 +298,6 @@ void hwapi01_beep_crtl(u8 on_off)
 	}
 }
 
-
-
-
-
 void test_hwapi01_beep_crtl(void)
 {
 	hwapi01_beep_crtl(1);//beep on
@@ -313,6 +305,103 @@ void test_hwapi01_beep_crtl(void)
 	hwapi01_beep_crtl(0);//beep off
 	myDelay(1000);
 }
+
+
+void gpio_init_led(void)
+{
+	gpio_dir(GPIO_LED1, GPIO_OUTPUT);
+	gpio_dir(GPIO_LED2, GPIO_OUTPUT);
+	gpio_dir(GPIO_LED3, GPIO_OUTPUT);
+    gpio_ctrl(GPIO_LED1, GPIO_LOW);
+	gpio_ctrl(GPIO_LED2, GPIO_HIGH);
+	gpio_ctrl(GPIO_LED3, GPIO_HIGH);
+}
+
+
+void hwapi02_led1_ctrl(u8 on_off)
+{
+	if (on_off > 0){
+		gpio_ctrl(GPIO_LED1, GPIO_LOW);
+	}else{
+		gpio_ctrl(GPIO_LED1, GPIO_HIGH);
+	}
+}
+
+void hwapi02_led2_ctrl(u8 on_off)
+{
+	if (on_off > 0){
+		gpio_ctrl(GPIO_LED2, GPIO_LOW);
+	}else{
+		gpio_ctrl(GPIO_LED2, GPIO_HIGH);
+	}
+}
+
+void hwapi02_led3_ctrl(u8 on_off)
+{
+	if (on_off > 0){
+		gpio_ctrl(GPIO_LED3, GPIO_LOW);
+	}else{
+		gpio_ctrl(GPIO_LED3, GPIO_HIGH);
+	}
+}
+
+
+void test_hwapi02_led_ctrl(void)
+{
+	hwapi02_led1_ctrl(1);//led on
+	hwapi02_led2_ctrl(1);//led on
+	hwapi02_led3_ctrl(1);//led on
+	myDelay(1000);
+	hwapi02_led1_ctrl(0);//led off
+	hwapi02_led2_ctrl(0);//led off
+	hwapi02_led3_ctrl(0);//led off	
+	myDelay(1000);
+}
+
+void gpio_init_rf433m_mode(void)
+{
+	gpio_dir(GPIO_M0, GPIO_OUTPUT);
+	gpio_dir(GPIO_M1, GPIO_OUTPUT);
+
+	gpio_ctrl(GPIO_M1, GPIO_LOW);
+	gpio_ctrl(GPIO_M0, GPIO_HIGH);//wakeup mode, to wakeup the lock
+}
+
+void hwapi03_rf433m_mode(u8 mode)
+{
+	switch (mode){
+		case 0://normal mode
+			gpio_ctrl(GPIO_M1, GPIO_LOW);
+			gpio_ctrl(GPIO_M0, GPIO_LOW);
+			break;
+		case 1://wakeup mode
+			gpio_ctrl(GPIO_M1, GPIO_LOW);
+			gpio_ctrl(GPIO_M0, GPIO_HIGH);
+			break;
+		case 2://sleep mode
+			gpio_ctrl(GPIO_M1, GPIO_HIGH);
+			gpio_ctrl(GPIO_M0, GPIO_LOW);
+			break;
+		case 3://config mode
+			gpio_ctrl(GPIO_M1, GPIO_HIGH);
+			gpio_ctrl(GPIO_M0, GPIO_HIGH);
+			break;
+		default:
+			gpio_ctrl(GPIO_M1, GPIO_LOW);
+			gpio_ctrl(GPIO_M0, GPIO_LOW);
+			break;
+	}
+}
+
+
+void test_hwapi03_rf433m_mode(void)
+{
+	hwapi03_rf433m_mode(0);
+	myDelay(1000);
+	hwapi03_rf433m_mode(3);
+	myDelay(1000);	
+}
+
 
 int main(void)
 {
@@ -323,13 +412,17 @@ int main(void)
 
 	WKTInit();
 
-	//UART0Init();
+	UART0Init();
 
 
 	
     while (1) {
-		//uart0_thread();
-		test_hwapi01_beep_crtl();
+		uart0_thread();
+
+
+		//test_hwapi01_beep_crtl();
+		//test_hwapi02_led_ctrl();
+		//test_hwapi03_rf433m_mode();
     }
 }
 
