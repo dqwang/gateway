@@ -177,8 +177,8 @@
           <Flash2>Segger\JL2CM3.dll</Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
-          <pFcarmOut>gateway</pFcarmOut>
-          <pFcarmGrp>LPC8xxx</pFcarmGrp>
+          <pFcarmOut></pFcarmOut>
+          <pFcarmGrp></pFcarmGrp>
           <pFcArmRoot></pFcArmRoot>
           <FcArmLst>0</FcArmLst>
         </Utilities>
@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath></IncludePath>
+              <IncludePath>.\CM0+;.\LPC8xx;.\include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -420,7 +420,7 @@
             </File>
             <File>
               <FileName>startup_lpc82x.s</FileName>
-              <FileType>9</FileType>
+              <FileType>2</FileType>
               <FilePath>.\LPC8xx\startup\startup_lpc82x.s</FilePath>
             </File>
           </Files>
@@ -430,7 +430,7 @@
           <Files>
             <File>
               <FileName>main.c</FileName>
-              <FileType>9</FileType>
+              <FileType>1</FileType>
               <FilePath>.\USER CODE\main.c</FilePath>
             </File>
           </Files>

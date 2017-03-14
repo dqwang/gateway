@@ -9,15 +9,17 @@
 #define GPIO_M0		(1 << 7)//RF_CTL1 P0.7
 #define GPIO_M1		(1 << 8)//RF_CTL2 P0.8
 
+#define GPIO_WIFI_MODE_WPS	(1 << 24)//MODE/WPS P0.24
+#define GPIO_WIFI_SLEEP		(1 << 25)//SLEEP P0.25
+#define GPIO_WIFI_FACTORY	(1 << 26)//FACTORY P0.26
+#define GPIO_WIFI_RESET 	(1 << 27)//RESET P0.27
 
-
-#define UART0_BPS        115200/*433M*/
-
+#define UART0_BPS   115200/*433M*/
+#define UART1_BPS	115200
+#define UART2_BPS	115200
 
 
 #define UART_RBUF_SIZE (64)
-
-
 
 typedef struct uart{
 	u8 rflag;
@@ -50,7 +52,8 @@ typedef struct packet{
 
 
 uart_t uart0;
-
+uart_t uart1;
+uart_t uart2;
 
 
 
@@ -75,6 +78,7 @@ void gpio_dir(uint32_t gpio, uint32_t dir);
 void gpio_init_beep(void);
 void gpio_init_led(void);
 void gpio_init_rf433m_mode(void);
+void gpio_init_wifi(void);
 
 
 void hwapi01_beep_crtl(u8 on_off);
@@ -82,12 +86,18 @@ void hwapi02_led1_ctrl(u8 on_off);
 void hwapi02_led2_ctrl(u8 on_off);
 void hwapi02_led3_ctrl(u8 on_off);
 void hwapi03_rf433m_mode(u8 mode);
+void hwapi04_wifi_reset(void);
+void hwapi05_wifi_factory(void);
 
 
 
 void test_hwapi01_beep_crtl(void);
 void test_hwapi02_led_ctrl(void);
 void test_hwapi03_rf433m_mode(void);
+void test_hwapi04_wifi_reset(void);
+void test_hwapi05_wifi_factory(void);
+
+void test_wifi_uart2(void);
 
 /******************************************************************************/
 
@@ -145,7 +155,7 @@ void GPIOInit (void)
 	gpio_init_beep();
 	gpio_init_led();
 	gpio_init_rf433m_mode();
-
+	gpio_init_wifi();
 #if 0
 
 	LPC_GPIO_PORT->DIR[0] &= ~KEY;
@@ -179,19 +189,17 @@ void UART0SendEnable(void)
 void UART0SendDisable(void)
 {
 	LPC_USART0->INTENCLR |= (1 << 2);
-
-	
 }
 
 void UART0Init (void)
 {
     LPC_SWM->PINASSIGN[0] &= ~( 0xFFFF << 0 );
-    LPC_SWM->PINASSIGN[0] |=  ( 6 << 0 );                               /* P0.0 ~ UART0_RXD rf433m recv */
-    LPC_SWM->PINASSIGN[0] |=  ( 0 << 8 );                               /* P0.6 ~ UART0_TXD rf433m send */
-    
+    LPC_SWM->PINASSIGN[0] |=  ( 0 << 0 );                               /* P0.0 ~ UART0_RXD rf433m recv */
+    LPC_SWM->PINASSIGN[0] |=  ( 6 << 8 );                               /* P0.6 ~ UART0_TXD rf433m send */
+
     LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
     LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 14);                             /* 初始化UART AHB时钟           */
-    
+
     LPC_USART0->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
                       (LPC_SYSCON->UARTCLKDIV * 16 * UART0_BPS) - 1;     /* 串口通信波特率               */
     LPC_USART0->CFG = (1 << 0) |                                        /* 使能UART                     */
@@ -204,8 +212,6 @@ void UART0Init (void)
 
 	CLEAR_UART(&uart0);
 }
-
-
 
 void gpio_ctrl(uint32_t gpio, uint32_t value)
 {
@@ -223,8 +229,6 @@ void gpio_dir(uint32_t gpio, uint32_t dir)
 		LPC_GPIO_PORT->DIR[0] |=  gpio;
 }
 
-
-
 void uart0_sendbuf(u8* buf, u16 size) 
 {
 	if (buf == NULL || size <=0){
@@ -236,20 +240,16 @@ void uart0_sendbuf(u8* buf, u16 size)
 	UART0SendEnable();
 }
 
-
-
-
 void UART0_IRQHandler (void)
 {
     if (LPC_USART0->STAT & 0x01) {//recv
-       
 		uart0.rbuf[uart0.rindex++] = LPC_USART0->RXDATA;
 		if (uart0.rindex >= UART_RBUF_SIZE){
 			uart0.rindex = 0;
-		}	
+		}
 		uart0.rflag=1;
-    }	
-                                      
+    }
+
 	if (LPC_USART0->STAT & 0x04) {//send
 		if (uart0.slen == 0){
 			return;
@@ -260,7 +260,6 @@ void UART0_IRQHandler (void)
 			uart0.slen=0;
 		}
 	}
-    
 }
 
 void uart0_thread(void)
@@ -268,7 +267,6 @@ void uart0_thread(void)
 	if (uart0.rflag == 1){
 		//myDelay(10);//waiting until the packet done
 		
-
 		#if 1
 		//debug
 		uart0_sendbuf(uart0.rbuf, uart0.rindex);
@@ -280,6 +278,149 @@ void uart0_thread(void)
 		//CLEAR_PACKET(&server);
 	}
 }
+
+void UART1SendEnable(void)
+{
+	LPC_USART1->INTENSET |= (1 << 2);
+}
+
+void UART1SendDisable(void)
+{
+	LPC_USART1->INTENCLR |= (1 << 2);
+}
+
+void UART1RecvEnable(void)
+{
+	LPC_USART1->INTENSET = (1 << 0);
+}
+
+void UART1Init (void)
+{
+    LPC_SWM->PINASSIGN[1] &= ~( 0xFFFF << 8 );
+    LPC_SWM->PINASSIGN[1] |=  ( 21 << 8 );                               /* P0.21 ~ UART1_TXD             */
+    LPC_SWM->PINASSIGN[1] |=  ( 22 << 16 );                              /* P0.22 ~ UART1_RXD             */
+
+    LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
+    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 15);                             /* 初始化UART AHB时钟           */
+
+    LPC_USART1->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
+                      (LPC_SYSCON->UARTCLKDIV * 16 * UART1_BPS) - 1;     /* 串口通信波特率               */
+    LPC_USART1->CFG = (1 << 0) |                                        /* 使能UART                     */
+                      (1 << 2) |                                        /* 8位数据位                    */
+                      (0 << 4) |                                        /* 无校验                       */
+                      (0 << 6);                                         /* 1位停止位                    */
+
+    LPC_USART1->INTENSET = (1 << 0);                                    /* 使能接收中断                 */
+    NVIC_EnableIRQ(UART1_IRQn);                                         /* 打开UART中断                 */
+}
+
+void UART1_IRQHandler (void)
+{
+	if (LPC_USART1->STAT & 0x01) {//recv
+		#if 1
+		uart1.rbuf[uart1.rindex++] = LPC_USART1->RXDATA;
+		if (uart1.rindex >= UART_RBUF_SIZE){
+			uart1.rindex = 0;
+		}
+		uart1.rflag=1;
+		#else
+		uart_test =  LPC_USART1->RXDATA;
+		UART1SendEnable();
+		#endif
+    }               
+	if (LPC_USART1->STAT & 0x04) {//send
+	#if 1
+		if (uart1.slen == 0){
+			return;
+		}
+		LPC_USART1->TXDATA = uart1.sbuf[uart1.sindex++];
+		if (uart1.sindex >= uart1.slen) {
+			UART1SendDisable();
+			uart1.slen=0;
+		}
+	#else
+		LPC_USART1->TXDATA = uart_test;
+		UART1SendDisable();
+	#endif
+	}
+}
+
+void uart1_sendbuf(u8* buf, u16 size)
+{
+	if (buf == NULL || size <=0){
+		return;
+	}
+	memcpy(uart1.sbuf, buf, size);
+	uart1.slen = size;
+	uart1.sindex = 0;
+	UART1SendEnable();
+}
+
+
+void UART2SendEnable(void)
+{
+	LPC_USART2->INTENSET |= (1 << 2);
+}
+
+void UART2SendDisable(void)
+{
+	 LPC_USART2->INTENCLR |= (1 << 2);
+}
+
+void UART2Init (void)
+{
+    LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
+    LPC_SWM->PINASSIGN[2] |=  ( 16 << 16 );                              /* P0.16 ~ UART2_TXD             */
+    LPC_SWM->PINASSIGN[2] |=  ( 10 << 24 );                              /* P0.10 ~ UART2_RXD             */
+
+    LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
+    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 16);                             /* 初始化UART AHB时钟           */
+
+    LPC_USART2->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
+                      (LPC_SYSCON->UARTCLKDIV * 16 * UART2_BPS) - 1;     /* 串口通信波特率               */
+    LPC_USART2->CFG = (1 << 0) |                                        /* 使能UART                     */
+                      (1 << 2) |                                        /* 8位数据位                    */
+                      (0 << 4) |                                        /* 无校验                       */
+                      (0 << 6);                                         /* 1位停止位                    */
+
+    LPC_USART2->INTENSET = (1 << 0);                                    /* 使能接收中断                 */
+    NVIC_EnableIRQ(UART2_IRQn);                                         /* 打开UART中断                 */
+}
+
+void UART2_IRQHandler (void)
+{
+    if (LPC_USART2->STAT & 0x01) {                                      /* 接收中断                     */
+		uart2.rbuf[uart2.rindex++] = LPC_USART2->RXDATA;
+		if (uart2.rindex >= UART_RBUF_SIZE){
+			uart2.rindex = 0;
+		}
+		uart2.rflag=1;
+    }
+
+    if (LPC_USART2->STAT & 0x04) {                                      /* 发送中断                     */
+		if (uart2.slen == 0){
+			return;
+		}
+		LPC_USART2->TXDATA = uart2.sbuf[uart2.sindex++];
+		if (uart2.sindex >= uart2.slen) {
+			UART2SendDisable();
+			uart2.slen=0;
+		}
+    }
+}
+
+void uart2_sendbuf(u8* buf, u16 size)
+{
+	if (buf == NULL || size <=0){
+		return;
+	}
+	memcpy(uart2.sbuf, buf, size);
+	uart2.slen = size;
+	uart2.sindex = 0;
+	UART2SendEnable();
+}
+
+
 
 /*TDD: Testing Driven Develop*/
 
@@ -403,6 +544,112 @@ void test_hwapi03_rf433m_mode(void)
 }
 
 
+void test_uart0_echo(void)
+{
+	if (uart0.rflag == 1){
+		//myDelay(10);//waiting until the packet done
+		uart0_sendbuf(uart0.rbuf, uart0.rindex);
+		CLEAR_UART(&uart0);
+	}
+}
+
+
+void test_uart1_echo(void)
+{
+	if (uart1.rflag == 1){
+		//myDelay(10);//waiting until the packet done
+
+		uart1_sendbuf(uart1.rbuf, uart1.rindex);
+		CLEAR_UART(&uart1);
+	}
+}
+
+void test_uart2_echo(void)
+{
+	if (uart2.rflag == 1){
+		//myDelay(10);//waiting until the packet done
+		uart2_sendbuf(uart2.rbuf, uart2.rindex);
+		CLEAR_UART(&uart2);
+	}
+}
+
+void test_uart0_send(void)
+{
+	u8 sbuf[1]={0x01};
+	uart0_sendbuf(sbuf,sizeof(sbuf));
+	myDelay(1);
+}
+
+void test_uart1_send(void)
+{
+	u8 sbuf[1]={0x01};
+	uart1_sendbuf(sbuf,sizeof(sbuf));
+	myDelay(1);
+}
+
+void test_uart2_send(void)
+{
+	u8 sbuf[1]={0x01};
+	uart2_sendbuf(sbuf,sizeof(sbuf));
+	myDelay(1);
+}
+
+void gpio_init_wifi(void)
+{
+	gpio_dir(GPIO_WIFI_FACTORY, GPIO_OUTPUT);
+	gpio_dir(GPIO_WIFI_RESET, GPIO_OUTPUT);
+	gpio_dir(GPIO_WIFI_MODE_WPS, GPIO_OUTPUT);
+	gpio_dir(GPIO_WIFI_SLEEP, GPIO_OUTPUT);
+
+	gpio_ctrl(GPIO_WIFI_FACTORY, GPIO_HIGH);
+	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
+	gpio_ctrl(GPIO_WIFI_MODE_WPS, GPIO_HIGH);
+	gpio_ctrl(GPIO_WIFI_SLEEP, GPIO_HIGH);
+
+	test_hwapi04_wifi_reset();
+}
+
+// invoke this reset function if you need to reconnect server
+// 考虑时间是否该用定时器实现
+void hwapi04_wifi_reset(void)
+{
+	gpio_ctrl(GPIO_WIFI_RESET, GPIO_LOW);
+	myDelay(20);//must be more than 10ms
+	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
+}
+
+void test_hwapi04_wifi_reset(void)
+{
+	myDelay(1000);
+	hwapi04_wifi_reset();
+	myDelay(1000);
+}
+
+//需增加flash flag, 记录是否已经恢复过出厂设置。
+void hwapi05_wifi_factory(void)
+{
+	gpio_ctrl(GPIO_WIFI_FACTORY, GPIO_LOW);
+	myDelay(3500);//must be more than 3s
+	gpio_ctrl(GPIO_WIFI_FACTORY, GPIO_HIGH);
+}
+
+void test_hwapi05_wifi_factory(void)
+{
+	hwapi05_wifi_factory();
+}
+
+void test_wifi_uart2(void)
+{
+	u8 sbuf[1]={0x0a};
+	uart2_sendbuf(sbuf,sizeof(sbuf));
+	myDelay(1);
+	//checkpoint
+	//signal should be ok in hardware
+	//PC rak415 tool should receive the data from mcu
+	//next todo: mcu should receive data from PC
+}
+
+
 int main(void)
 {
 	//myDelay(1000);//system poweron	
@@ -413,16 +660,26 @@ int main(void)
 	WKTInit();
 
 	UART0Init();
+	UART1Init();
+	UART2Init();
 
-
-	
+	//test_hwapi05_wifi_factory();
     while (1) {
-		uart0_thread();
+		//uart0_thread();
 
 
 		//test_hwapi01_beep_crtl();
 		//test_hwapi02_led_ctrl();
 		//test_hwapi03_rf433m_mode();
+		//test_uart0_echo();
+		//test_uart1_echo();
+		//test_uart2_echo();
+		//test_uart0_send();
+		//test_uart1_send();
+		//test_uart2_send();
+
+		//test_hwapi04_wifi_reset();
+		//test_wifi_uart2();
     }
 }
 
