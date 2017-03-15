@@ -649,6 +649,27 @@ void test_wifi_uart2(void)
 	//next todo: mcu should receive data from PC
 }
 
+//USR-TCP232-T
+void hwapi06_rj45_reset(void)
+{
+	gpio_ctrl(GPIO_WIFI_RESET, GPIO_LOW);
+	myDelay(250);//must be more than 200ms
+	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
+}
+
+void test_hwapi06_rj45_reset(void)
+{
+	myDelay(1000);
+	hwapi06_rj45_reset();
+	myDelay(1000);
+}
+void test_rj45_uart2(void)
+{
+	u8 sbuf[1]={0x0b};
+	uart2_sendbuf(sbuf,sizeof(sbuf));
+	myDelay(1);
+}
+
 
 int main(void)
 {
@@ -673,13 +694,16 @@ int main(void)
 		//test_hwapi03_rf433m_mode();
 		//test_uart0_echo();
 		//test_uart1_echo();
-		//test_uart2_echo();
+		test_uart2_echo();
 		//test_uart0_send();
 		//test_uart1_send();
 		//test_uart2_send();
 
 		//test_hwapi04_wifi_reset();
 		//test_wifi_uart2();
+
+		//test_hwapi06_rj45_reset();
+		//test_rj45_uart2();
     }
 }
 
