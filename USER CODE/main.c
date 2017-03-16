@@ -8,15 +8,21 @@
 
 #define GPIO_M0		(1 << 7)//RF_CTL1 P0.7
 #define GPIO_M1		(1 << 8)//RF_CTL2 P0.8
+#define GPIO_AUX 	(1 << 9)//RF_CTL3 P0.9
+
 
 #define GPIO_WIFI_MODE_WPS	(1 << 24)//MODE/WPS P0.24
 #define GPIO_WIFI_SLEEP		(1 << 25)//SLEEP P0.25
 #define GPIO_WIFI_FACTORY	(1 << 26)//FACTORY P0.26
 #define GPIO_WIFI_RESET 	(1 << 27)//RESET P0.27
 
+#define GPIO_GPRS_RESET		(1 << 23)//RESET P0.23
+#define GPIO_GPRS_INT		(1 << 14)//INT P0.14
+
+
 #define UART0_BPS   115200/*433M*/
-#define UART1_BPS	115200
-#define UART2_BPS	115200
+#define UART1_BPS	115200/*GPRS*/
+#define UART2_BPS	115200/*WIFI and RJ45*/
 
 
 #define UART_RBUF_SIZE (64)
@@ -62,11 +68,36 @@ uart_t uart2;
 #define DEBUG_LOG(buf, len)
 
 
-#define send2server(buf,len) uart0_sendbuf(buf, len)
-
-
+#define send2server(buf,len) uart2_sendbuf(buf, len)
 
 #define CLEAR_UART(p) memset(p,0x0,sizeof(uart_t))
+
+
+typedef enum {
+	   GPRS_FLAG0_NONE =0,
+
+	   GPRS_FLAG1_REG,
+	   GPRS_FLAG2_CLOSE_ECHO,
+	   GPRS_FLAG3_GATT,
+	   GPRS_FLAG4_GACT,
+
+	   GPRS_FLAG5_CONNECT_TCP,
+	   GPRS_FLAG6_TRS_CONFIG,
+	   GPRS_FLAG7_TRS_OPEN,
+	   GPRS_FLAG8_USER_DATA
+}gprs_flag_e;
+
+typedef struct gprs_{
+	gprs_flag_e gprs_flag;
+	//u8 *gprs_cmd[];
+	//u8 *gprs_ack[];
+}gprs_t;
+
+#define sizeofstr(str) (sizeof(str)-1)
+#define GPRS_SEND_CMD(cmd_buf) uart1_sendbuf(cmd_buf, sizeofstr(cmd_buf))
+#define CLEAR_GPRS(p) memset(p,0x0,sizeof(gprs_t))
+
+gprs_t gprs;
 
 
 /*****************************function prototype*******************************/
@@ -80,6 +111,9 @@ void gpio_init_led(void);
 void gpio_init_rf433m_mode(void);
 void gpio_init_wifi(void);
 
+void gprs_init(void);
+
+
 
 void hwapi01_beep_crtl(u8 on_off);
 void hwapi02_led1_ctrl(u8 on_off);
@@ -88,7 +122,20 @@ void hwapi02_led3_ctrl(u8 on_off);
 void hwapi03_rf433m_mode(u8 mode);
 void hwapi04_wifi_reset(void);
 void hwapi05_wifi_factory(void);
+void hwapi06_rj45_reset(void);
 
+
+void gprs_trs_config(void);
+void gprs_connect_tcp(void);
+void gprs_act(void);
+void gprs_att(void);
+void gprs_close_echo(void);
+errno_t check_gprs_cmd_ack(u8 *ok, u8 *ack_from_gprs);
+void gprs_reg(void);
+void gprs_trs_open(void);
+void gprs_user_data(void);
+void gprs_close_tcp(void);
+void gprs_reconnect_server(void);
 
 
 void test_hwapi01_beep_crtl(void);
@@ -96,8 +143,14 @@ void test_hwapi02_led_ctrl(void);
 void test_hwapi03_rf433m_mode(void);
 void test_hwapi04_wifi_reset(void);
 void test_hwapi05_wifi_factory(void);
+void test_hwapi06_rj45_reset(void);
+
 
 void test_wifi_uart2(void);
+void test_rj45_uart2(void);
+
+void test_gprs(void);
+
 
 /******************************************************************************/
 
@@ -663,6 +716,7 @@ void test_hwapi06_rj45_reset(void)
 	hwapi06_rj45_reset();
 	myDelay(1000);
 }
+
 void test_rj45_uart2(void)
 {
 	u8 sbuf[1]={0x0b};
@@ -670,10 +724,207 @@ void test_rj45_uart2(void)
 	myDelay(1);
 }
 
+void gprs_reg(void)
+{
+	u8 reg_cmd[]="AT+CREG?\r\n";
+	u8 i=0;
+	gprs.gprs_flag = GPRS_FLAG0_NONE;
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(reg_cmd);
+		myDelay(5000);
+		for(i=0;i<uart1.rindex;i++){
+			if (uart1.rbuf[i] == ':'){
+				if (uart1.rbuf[i+2] == '1' && uart1.rbuf[i+4] == '1'){
+					gprs.gprs_flag = GPRS_FLAG1_REG;
+					// 语音提示 GPRS注册成功
+					break;
+				}
+			}
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG0_NONE);
+}
+
+errno_t check_gprs_cmd_ack(u8 *ok, u8 *ack_from_gprs)
+{
+	u8 i=0;
+
+	for (i=0;i<sizeofstr(ok);i++){
+		if (ok[i] != ack_from_gprs[i]){
+			return E_INVALID_PACKET;
+		}
+	}
+	return EOK;
+}
+
+void gprs_close_echo(void)
+{
+	u8 close_echo_cmd[]="ATE0\r\n";
+	u8 close_echo_ok[]="ATE0\r\n\r\nOK\r\n";
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(close_echo_cmd);
+		myDelay(1000);
+
+		if (EOK == check_gprs_cmd_ack(close_echo_ok, uart1.rbuf)){
+			gprs.gprs_flag = GPRS_FLAG2_CLOSE_ECHO;
+			// 语音提示 GPRS关闭回显功能成功
+			break;
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG1_REG);
+}
+
+void gprs_att(void)
+{
+	u8 att_cmd[]="AT+CGATT=1\r\n";
+	u8 att_ok[]="\r\nOK\r\n";
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(att_cmd);
+		myDelay(1000);
+
+		if (EOK == check_gprs_cmd_ack(att_ok, uart1.rbuf)){
+			gprs.gprs_flag = GPRS_FLAG3_GATT;
+			// 语音提示 GPRS附着成功
+			break;
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG2_CLOSE_ECHO);
+}
+
+void gprs_act(void)
+{
+	u8 act_cmd[]="AT+CGACT=1,1\r\n";
+	u8 act_ok[]="\r\nOK\r\n";
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(act_cmd);
+		myDelay(3000);
+		if (EOK == check_gprs_cmd_ack(act_ok, uart1.rbuf)){
+			gprs.gprs_flag = GPRS_FLAG4_GACT;
+			// 语音提示 GPRS PDP激活成功
+			break;
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG3_GATT);
+}
+
+void gprs_connect_tcp(void)
+{
+	u8 connect_tcp_cmd[]="AT+CIPSTART=TCP,120.55.117.108,10000\r\n";
+	u8 connect_tcp_ok[]="\r\nCONNECT OK\r\n\r\nOK\r\n";
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(connect_tcp_cmd);
+		myDelay(3000);
+
+		if (EOK == check_gprs_cmd_ack(connect_tcp_ok, uart1.rbuf)){
+			gprs.gprs_flag = GPRS_FLAG5_CONNECT_TCP;
+			// 语音提示 GPRS 连接TCP服务器
+			break;
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG4_GACT);
+}
+
+
+void gprs_trs_config(void)
+{
+	u8 trs_config_cmd[]="AT+CIPTCFG=2,10\r\n";// 10 bytes at least per packet
+	u8 trs_config_ok[]="\r\nOK\r\n";
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(trs_config_cmd);
+		myDelay(1000);
+
+		if (EOK == check_gprs_cmd_ack(trs_config_ok, uart1.rbuf)){
+			gprs.gprs_flag = GPRS_FLAG6_TRS_CONFIG;
+			// 语音提示 GPRS 透传设置参数
+
+			break;
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG5_CONNECT_TCP);
+}
+
+void gprs_trs_open(void)
+{
+	u8 trs_open_cmd[]="AT+CIPTMODE=1\r\n";
+	u8 trs_open_ok[]="\r\nOK\r\n";
+
+	do{
+		CLEAR_UART(&uart1);
+		GPRS_SEND_CMD(trs_open_cmd);
+		myDelay(1000);
+		if (EOK == check_gprs_cmd_ack(trs_open_ok, uart1.rbuf)){
+			gprs.gprs_flag = GPRS_FLAG7_TRS_OPEN;
+			// 语音提示 GPRS 透传模式开启
+			break;
+		}
+	}while(gprs.gprs_flag == GPRS_FLAG6_TRS_CONFIG);
+}
+
+void gprs_user_data(void)
+{
+	if (gprs.gprs_flag == GPRS_FLAG7_TRS_OPEN){
+		gprs.gprs_flag = GPRS_FLAG8_USER_DATA;
+		//next to uart1_thread()
+
+
+	}
+}
+
+void gprs_close_tcp(void)
+{
+	u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
+}
+
+void gprs_init(void)
+{
+	CLEAR_GPRS(&gprs);
+	gprs_reg();
+	gprs_close_echo();
+	gprs_att();
+	gprs_act();
+
+	gprs_connect_tcp();
+	gprs_trs_config();
+	gprs_trs_open();
+
+	gprs_user_data();
+}
+
+void gprs_reconnect_server(void)
+{
+	gprs.gprs_flag = GPRS_FLAG4_GACT;
+
+	gprs_connect_tcp();
+	gprs_trs_config();
+	gprs_trs_open();
+
+	gprs_user_data();
+}
+
+
+
+void test_gprs(void)
+{
+	if (uart1.rflag == 1 && gprs.gprs_flag == GPRS_FLAG8_USER_DATA){
+		myDelay(10);//waiting until the packet done
+
+		uart1_sendbuf(uart1.rbuf, uart1.rindex);
+
+		uart1.rflag = 0;
+		uart1.rindex = 0;
+	}
+}
+
 
 int main(void)
 {
-	//myDelay(1000);//system poweron	
+	myDelay(1000);//system poweron
 	
     SystemInit();                                                       /* 初始化目标板，切勿删除       */
     GPIOInit();                                                         /* GPIO初始化                   */
@@ -684,6 +935,7 @@ int main(void)
 	UART1Init();
 	UART2Init();
 
+	gprs_init();
 	//test_hwapi05_wifi_factory();
     while (1) {
 		//uart0_thread();
@@ -694,7 +946,7 @@ int main(void)
 		//test_hwapi03_rf433m_mode();
 		//test_uart0_echo();
 		//test_uart1_echo();
-		test_uart2_echo();
+		//test_uart2_echo();
 		//test_uart0_send();
 		//test_uart1_send();
 		//test_uart2_send();
@@ -704,6 +956,8 @@ int main(void)
 
 		//test_hwapi06_rj45_reset();
 		//test_rj45_uart2();
+
+		test_gprs();
     }
 }
 

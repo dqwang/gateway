@@ -30,72 +30,71 @@ compiling system_LPC8xx.c...
 compiling uart.c...
 assembling startup_lpc82x.s...
 compiling main.c...
-USER CODE\main.c(277): warning:  #111-D: statement is unreachable
+USER CODE\main.c(330): warning:  #111-D: statement is unreachable
                 CLEAR_UART(&uart0);
-USER CODE\main.c(372): warning:  #61-D: integer operation result is out of range
+USER CODE\main.c(425): warning:  #61-D: integer operation result is out of range
       LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
-USER CODE\main.c: 2 warnings, 0 errors
+USER CODE\main.c(903): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
+        u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
+USER CODE\main.c: 3 warnings, 0 errors
 linking...
-Program Size: Code=3796 RO-data=224 RW-data=4 ZI-data=1012  
+Program Size: Code=4808 RO-data=224 RW-data=8 ZI-data=1008  
 FromELF: creating hex file...
-".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 2 Warning(s).
+".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 3 Warning(s).
 
 <h2>Collection of Component include folders:</h2>
   Z:\sihan\lpc\gateway\RTE
   C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
 
 <h2>Collection of Component Files used:</h2>
-Load "Z:\\sihan\\lpc\\gateway\\Objects\\SIHAN_LPC824_Gateway.axf" 
-* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
-Set JLink Project File to "Z:\sihan\lpc\gateway\JLinkSettings.ini"
-* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
- 
-JLink info:
-------------
-DLL: V4.91b, compiled Sep 15 2014 09:17:56
-Firmware: J-Link ARM V8 compiled Nov 28 2014 13:44:46
-Hardware: V8.00
-Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFULL 
- 
-* JLink Info: Found SWD-DP with ID 0x0BC11477
-* JLink Info: Found Cortex-M0 r0p1, Little endian.
-* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
-ROMTableAddr = 0xE00FF003
- 
-Target info:
-------------
-Device: LPC824M201JHI33
-VTarget = 2.743V
-State of Pins: 
-TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
-Hardware-Breakpoints: 4
-Software-Breakpoints: 8192
-Watchpoints:          2
-JTAG speed: 2000 kHz
- 
-Full Chip Erase Done.
-Programming Done.
-Verify OK.
-Application running ...
-lashBP,JFlash,GDBFULL 
- 
-* JLink Info: Found SWD-DP with ID 0x0BC11477
-* JLink Info: Found Cortex-M0 r0p1, Little endian.
-* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
-ROMTableAddr = 0xE00FF003
- 
-Target info:
-------------
-Device: LPC824M201JHI33
-VTarget = 2.750V
-State of Pins: 
-TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
-Hardware-Breakpoints: 4
-Software-Breakpoints: 8192
-Watchpoints:          2
-JTAG speed: 2000 kHz
- 
-Full Chip Erase Done.
-Programming Done.
-Verify OK.
-Application running ...
+"myDelay" declared implicitly
+        myDelay(1);
+USER CODE\main.c(627): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1);
+USER CODE\main.c(634): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1);
+USER CODE\main.c(657): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(20);//must be more than 10ms
+USER CODE\main.c(663): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1000);
+USER CODE\main.c(672): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(3500);//must be more than 3s
+USER CODE\main.c(685): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1);
+USER CODE\main.c(696): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(250);//must be more than 200ms
+USER CODE\main.c(702): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1000);
+USER CODE\main.c(713): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1);
+USER CODE\main.c(725): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(5000);
+USER CODE\main.c(764): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(1000);
+USER CODE\main.c(786): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(1000);
+USER CODE\main.c(808): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(3000);
+USER CODE\main.c(828): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(3000);
+USER CODE\main.c(848): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(1000);
+USER CODE\main.c(867): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(1000);
+USER CODE\main.c(890): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
+        u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
+USER CODE\main.c(922): error:  #247: function "test_gprs" has already been defined
+  void test_gprs(void)
+USER CODE\main.c(925): warning:  #223-D: function "myDelay" declared implicitly
+                myDelay(10);//waiting until the packet done
+USER CODE\main.c(937): warning:  #223-D: function "myDelay" declared implicitly
+        myDelay(1000);//system poweron  
+USER CODE\main.c: 25 warnings, 3 errors
+".\Objects\SIHAN_LPC824_Gateway.axf" - 3 Error(s), 25 Warning(s).
+
+<h2>Collection of Component include folders:</h2>
+  Z:\sihan\lpc\gateway\RTE
+  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+Target not created.
