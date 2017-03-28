@@ -21,6 +21,8 @@
 
 
 #define UART0_BPS   115200/*433M*/
+#define UART0_BPS_CONFIG_RF433M 9600/*mode3, 9600bps, then you can config the rf433m*/
+
 #define UART1_BPS	115200/*GPRS*/
 #define UART2_BPS	115200/*WIFI and RJ45*/
 
@@ -151,6 +153,10 @@ void test_rj45_uart2(void);
 
 void test_gprs(void);
 
+
+
+
+void uart2_sendbuf(u8* buf, u16 size);
 
 /******************************************************************************/
 
@@ -318,18 +324,27 @@ void UART0_IRQHandler (void)
 void uart0_thread(void)
 {
 	if (uart0.rflag == 1){
-		//myDelay(10);//waiting until the packet done
+		myDelay(10);//waiting until the packet done
 		
 		#if 1
 		//debug
-		uart0_sendbuf(uart0.rbuf, uart0.rindex);
-		CLEAR_UART(&uart0);
+		//uart0_sendbuf(uart0.rbuf, uart0.rindex);
+
+		send2server(uart0.rbuf,uart0.rindex);
+		myDelay(10);
+		CLEAR_UART(&uart2);
+		
 		return;
 		#endif
 
 		CLEAR_UART(&uart0);
 		//CLEAR_PACKET(&server);
 	}
+}
+
+void uart2_thread(void)
+{
+	
 }
 
 void UART1SendEnable(void)
@@ -561,26 +576,31 @@ void gpio_init_rf433m_mode(void)
 	gpio_ctrl(GPIO_M0, GPIO_HIGH);//wakeup mode, to wakeup the lock
 }
 
+#define RF_NORMAL_MODE 0
+#define RF_WAKEUP_MODE 1
+#define RF_SLEEP_MODE 2
+#define RF_CONFIG_MODE 3
+
 void hwapi03_rf433m_mode(u8 mode)
 {
 	switch (mode){
-		case 0://normal mode
+		case RF_NORMAL_MODE://normal mode
 			gpio_ctrl(GPIO_M1, GPIO_LOW);
 			gpio_ctrl(GPIO_M0, GPIO_LOW);
 			break;
-		case 1://wakeup mode
+		case RF_WAKEUP_MODE://wakeup mode
 			gpio_ctrl(GPIO_M1, GPIO_LOW);
 			gpio_ctrl(GPIO_M0, GPIO_HIGH);
 			break;
-		case 2://sleep mode
+		case RF_SLEEP_MODE://sleep mode
 			gpio_ctrl(GPIO_M1, GPIO_HIGH);
 			gpio_ctrl(GPIO_M0, GPIO_LOW);
 			break;
-		case 3://config mode
+		case RF_CONFIG_MODE://config mode
 			gpio_ctrl(GPIO_M1, GPIO_HIGH);
 			gpio_ctrl(GPIO_M0, GPIO_HIGH);
 			break;
-		default:
+		default://normal mode
 			gpio_ctrl(GPIO_M1, GPIO_LOW);
 			gpio_ctrl(GPIO_M0, GPIO_LOW);
 			break;
@@ -659,7 +679,7 @@ void gpio_init_wifi(void)
 	gpio_ctrl(GPIO_WIFI_MODE_WPS, GPIO_HIGH);
 	gpio_ctrl(GPIO_WIFI_SLEEP, GPIO_HIGH);
 
-	test_hwapi04_wifi_reset();
+	//test_hwapi04_wifi_reset();
 }
 
 // invoke this reset function if you need to reconnect server
@@ -922,6 +942,130 @@ void test_gprs(void)
 }
 
 
+void hwapi07_mod_uart0_baud(u32 baud)
+{
+	
+    LPC_SWM->PINASSIGN[0] &= ~( 0xFFFF << 0 );
+    LPC_SWM->PINASSIGN[0] |=  ( 0 << 0 );                               /* P0.0 ~ UART0_RXD rf433m recv */
+    LPC_SWM->PINASSIGN[0] |=  ( 6 << 8 );                               /* P0.6 ~ UART0_TXD rf433m send */
+
+    LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
+    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 14);                             /* 初始化UART AHB时钟           */
+
+    LPC_USART0->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
+                      (LPC_SYSCON->UARTCLKDIV * 16 * baud) - 1;     /* 串口通信波特率               */
+    LPC_USART0->CFG = (1 << 0) |                                        /* 使能UART                     */
+                      (1 << 2) |                                        /* 8位数据位                    */
+                      (0 << 4) |                                        /* 无校验                       */
+                      (0 << 6);                                         /* 1位停止位                    */
+
+	UART0RecvEnable();                        
+    NVIC_EnableIRQ(UART0_IRQn);	
+
+	CLEAR_UART(&uart0);
+}
+
+
+
+// 1. get config command bytes from PC tool
+// 2. test
+
+void hwapi07_rf433m_get_config(void)
+{
+	u8 cmd1_buf[3]={0xc1,0xc1,0xc1};	
+	uart0_sendbuf(cmd1_buf, sizeof(cmd1_buf));
+}
+
+void hwapi07_rf433m_set_config(void)
+{
+	u8 cmd2_buf[8]={0xc0,0x00,0x00,0x00,0x01,0x3a,0x11,0xec};
+	uart0_sendbuf(cmd2_buf, sizeof(cmd2_buf));
+}
+
+
+void hwapi07_rf433m_reset(void)
+{
+	u8 cmd3_buf[3]={0xc3,0xc3,0xc3};
+	uart0_sendbuf(cmd3_buf, sizeof(cmd3_buf));
+}
+
+
+
+//mode3
+void hwapi07_rf433m_config_prepare(void)
+{	
+	hwapi03_rf433m_mode(RF_CONFIG_MODE);
+	hwapi07_mod_uart0_baud(UART0_BPS_CONFIG_RF433M);
+}
+
+
+
+
+void test_hwapi07_rf433m_get_config(void)
+{
+	//hwapi07_rf433m_reset();
+	myDelay(1000);//if test this in main-loop, the delay must be needed.
+	hwapi07_rf433m_get_config();
+
+	//myDelay(100);
+}
+
+void test_hwapi07_rf433m_set_config(void)
+{
+	myDelay(1000);
+	hwapi07_rf433m_set_config();
+	//myDelay(100);
+}
+
+
+
+//input IRQ
+void test_rf433m_aux(void)
+{
+	
+}
+
+
+//mode1
+void hwapi08_rf433m_mode1_send_prepare(void)
+{	
+	hwapi03_rf433m_mode(RF_WAKEUP_MODE);
+	hwapi07_mod_uart0_baud(UART0_BPS);
+}
+
+
+void hwapi08_rf433m_mode1_send(u8 *addr_buf, u8 channel, u8 *data_buf, u8 data_size)
+{
+	u8 buf[5+32]={0};
+	//set mode , optional
+	
+	memcpy(buf, addr_buf, 4);
+	memcpy(buf+4, &channel, 1);
+
+	//if (data_size <= 32){
+		memcpy(buf+5, data_buf, data_size);
+	//}
+
+	uart0_sendbuf(buf,sizeof(buf));
+}
+
+
+//mode1: work
+void test_rf433m_mode1_transport(void)
+{
+	u8 addr_buf[4]={0x00, 0x00, 0x00,0x02};
+	u8 channel = 0x28;
+	u8 data_buf[32]={0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07, 0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,
+					 0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17, 0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f};
+	u8 data_size = 32;
+
+
+	hwapi08_rf433m_mode1_send_prepare();
+	hwapi08_rf433m_mode1_send(addr_buf, channel,data_buf,data_size);
+	myDelay(1000);
+}
+
+
 int main(void)
 {
 	myDelay(1000);//system poweron
@@ -935,11 +1079,17 @@ int main(void)
 	UART1Init();
 	UART2Init();
 
-	gprs_init();
+	//gprs_init();
 	//test_hwapi05_wifi_factory();
-    while (1) {
-		//uart0_thread();
 
+	//hwapi07_rf433m_config_prepare();
+	
+	hwapi08_rf433m_mode1_send_prepare();
+	
+    while (1) {
+		
+		//uart0_thread();
+		//uart2_thread();
 
 		//test_hwapi01_beep_crtl();
 		//test_hwapi02_led_ctrl();
@@ -957,7 +1107,11 @@ int main(void)
 		//test_hwapi06_rj45_reset();
 		//test_rj45_uart2();
 
-		test_gprs();
+		//test_gprs();
+
+		//test_hwapi07_rf433m_get_config();
+		//test_hwapi07_rf433m_set_config();
+		test_rf433m_mode1_transport();
     }
 }
 
