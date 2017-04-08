@@ -32,6 +32,7 @@
 #define UART_SBUF_SIZE (LOCK_PACKET_SIZE*2)
 
 #define WIFI_RECV_TIME 100 //ms
+#define RF_SEND_DELAY_TIME 80//ms
 
 
 typedef struct uart{
@@ -103,7 +104,10 @@ typedef struct gprs_{
 
 gprs_t gprs;
 
+#define LOCK_MAX_NUM_PER_GATEWAY 20
+
 rfac_u gw_addr_channel;
+rfac_u lock_addr_channel_array[LOCK_MAX_NUM_PER_GATEWAY];
 
 Queue sq;//server queue
 Queue lq;//lock queue
@@ -1160,35 +1164,6 @@ errno_t is_valid_packet_from_server(u8 *in_buf)
 		return E_INVALID_PACKET;
 }
 
-errno_t is_valid_packet_from_lock(u8 *in_buf)
-{
-	//header length
-
-	return EOK;
-}
-
-/*----------------------------------------------------------------------------*/
-
-
-void hwapi10_decode_packet_from_lock()
-{
-
-}
-
-void hwapi10_encode_packet_to_server(u32 in_gw_addr, u8 in_gw_channel, lpkt_u *in_lp, sp_u *out_sp)
-{
-	//encode
-	
-}
-
-
-void hwapi10_handle_packet_from_lock()
-{
-	
-}
-
-
-
 /*----------------------------------------------------------------------------*/
 
 void hwapi09_ack_error_to_server(errno_t errno)
@@ -1259,39 +1234,158 @@ ACK_ERROR_TO_SERVER:
 
 /*----------------------------------------------------------------------------*/
 
- 
 void handle_server_packet_thread(void)
 {
-	int i=0;
+	u16 i=0;
 
 	if (uart2.rflag == 1){
 	
-		#if 1//delay mode
 		delay_ms(WIFI_RECV_TIME);/*wifi 模块全功耗模式大概10ms接收完毕，若低功耗模式可能需要200ms*/
 
-		//header
 		for (i=0; i<UART_RBUF_SIZE-SERVER_PACKET_SIZE+1; i++){
 			if (EOK == is_valid_packet_from_server(uart2.rbuf+i)){
 				Enqueue(&sq, i);				
 			}
 		}
-
 		while (!is_queue_empty(&sq)){
 			hwapi09_handle_packet_from_server(uart2.rbuf + front(&sq));
 			Dequeue(&sq);
-			delay_ms(80);//send	
+			delay_ms(RF_SEND_DELAY_TIME);//send
 		}
 		CLEAR_UART(&uart2);
-		
-		#else//ring mode
-		if (uart2.rindex ){
-			
+	}
+}
 
-		
-		#endif
+/*----------------------------------------------------------------------------*/
+
+
+void lock_addr_channel_array_init(void)
+{
+	//todo 从服务器下发，存在flash中。
+	//todo read from the flash
+	rfac_u lock1_addr_channel;
+
+	SH_PUT_4_BYTE(lock1_addr_channel.rfac2.addr, 0x00000002);
+	lock1_addr_channel.rfac1.channel = 0x28;
+
+	memset(lock_addr_channel_array,0xff, sizeof(lock_addr_channel_array));
+	
+	memcpy(lock_addr_channel_array, lock1_addr_channel.rfac0, sizeof(rfac_u));
+
+	//todo
+}
+
+errno_t is_valid_packet_from_lock(u8 *in_buf)
+{
+	//header length
+	u8 i=0;
+
+	for (i=0;i<LOCK_MAX_NUM_PER_GATEWAY;i++){
+		if (0 == memcmp(in_buf, lock_addr_channel_array[i].rfac0, sizeof(rfac_u)))//todo, the tail != 0
+			//&& !(in_buf[LOCK_PACKET_SIZE -2] ==0 && in_buf[LOCK_PACKET_SIZE -1] ==0))//For new 433m module
+		{
+			return EOK;
+		}
+	}
+	
+	return E_INVALID_PACKET;
+}
+
+errno_t hwapi10_decode_packet_from_lock(u8 *in_buf, lpkt_u *out_lp)
+{
+	if (NULL == in_buf || NULL == out_lp){
+		return E_NULL_POINTER;
 	}
 
-	//manypacket
+	//decode
+	if (EOK == is_valid_packet_from_lock(in_buf)){
+		memcpy(out_lp->lpkt0, in_buf, sizeof(lpkt_u));
+		return EOK;
+	}else{
+		return E_INVALID_PACKET;
+	}
+}
+
+errno_t hwapi10_encode_packet_to_server(lpkt_u *in_lp)
+{
+	sp_u sp;
+
+	if (NULL == in_lp){
+		return E_NULL_POINTER;
+	}
+
+	//encode
+	memcpy(sp.sp0, gw_addr_channel.rfac0, sizeof(rfac_u));
+	memcpy(sp.sp2.lpkt.lpkt0, in_lp->lpkt0, sizeof(lpkt_u));		
+	SH_PUT_2_BYTE(sp.sp2.tail, TAIL_ENTER);
+
+	//send
+	send2server(sp.sp0, sizeof(sp_u));
+	
+	return EOK;
+}
+
+void hwapi10_ack_error_to_lock(errno_t error, rfac_u *lock_addr_channel)
+{
+	lpkt_u lp;
+
+	CLEAR_TYPE(&lp, lpkt_u);
+
+	memcpy(lp.lpkt2.lock_addr, lock_addr_channel->rfac2.addr, sizeof(RF_ADDR_SIZE));
+	lp.lpkt1.lock_channel = lock_addr_channel->rfac1.channel;
+	memset(lp.lpkt0+sizeof(rfac_u), (u8)error, LOCK_PROTOCOL_SIZE);
+
+	send2lock(lp.lpkt0, LOCK_PACKET_SIZE);
+}
+
+
+void hwapi10_handle_packet_from_lock(u8 *in_buf)
+{
+	lpkt_u lp;
+	errno_t ret = EOK;
+
+	if (NULL == in_buf){
+		return;
+	}
+
+	ret = hwapi10_decode_packet_from_lock(in_buf, &lp);
+	if(EOK != ret){
+		goto ACK_ERROR_TO_LOCK;
+	}
+
+	ret = hwapi10_encode_packet_to_server(&lp);
+	if (EOK != ret){
+		goto ACK_ERROR_TO_LOCK;
+	}
+
+	return;
+
+ACK_ERROR_TO_LOCK:
+	hwapi10_ack_error_to_lock(ret, (rfac_u *)lp.lpkt0);
+}
+
+
+//lock send packet to server needed : more than 120ms
+void handle_lock_packet_thread(void)
+{
+	u16 i=0;
+
+	if (uart0.rflag == 1){
+	
+		delay_ms(20);/*TBD*/
+
+		for (i=0; i<UART_RBUF_SIZE-LOCK_PACKET_SIZE+1; i++){
+			if (EOK == is_valid_packet_from_lock(uart0.rbuf+i)){
+				Enqueue(&lq, i);				
+			}
+		}
+		while (!is_queue_empty(&lq)){
+			hwapi10_handle_packet_from_lock(uart0.rbuf + front(&lq));
+			Dequeue(&lq);
+			delay_ms(10);//sendto server time
+		}
+		CLEAR_UART(&uart0);
+	}
 }
 
 
@@ -1365,7 +1459,7 @@ int main(void)
 	//hwapi04_wifi_reset();
 
 	hwapi07_rf433m_get_addr_channel();
-
+	lock_addr_channel_array_init();
 	
 	//gprs_init();
 	//test_hwapi05_wifi_factory();
@@ -1407,6 +1501,7 @@ int main(void)
 		//test_rf433m_mode0_transport();
 
 		handle_server_packet_thread();
+		handle_lock_packet_thread();
     }
 }
 
