@@ -1,4 +1,4 @@
-.\objects\main.o: USER CODE\main.c
+.\objects\main.o: user_code\main.c
 .\objects\main.o: .\include\main.h
 .\objects\main.o: .\LPC8xx\LPC8xx.h
 .\objects\main.o: .\CM0+\core_cm0plus.h
@@ -13,3 +13,5 @@
 .\objects\main.o: .\include\main.h
 .\objects\main.o: .\include\type.h
 .\objects\main.o: .\include\gpio.h
+.\objects\main.o: .\include\queue.h
+.\objects\main.o: .\include\packet_def.h

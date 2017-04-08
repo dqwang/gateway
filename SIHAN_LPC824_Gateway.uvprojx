@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>DebugInFlash</TargetName>
+      <TargetName>gateway</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <TargetOption>
@@ -406,7 +406,7 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>LPC8xxx</GroupName>
+          <GroupName>LPC8xx</GroupName>
           <Files>
             <File>
               <FileName>system_LPC8xx.c</FileName>
@@ -426,12 +426,17 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>USER CODE</GroupName>
+          <GroupName>user_code</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\USER CODE\main.c</FilePath>
+              <FilePath>.\user_code\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_code\queue.c</FilePath>
             </File>
           </Files>
         </Group>

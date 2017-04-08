@@ -22,25 +22,24 @@ Dialog DLL:      TARMCM1.DLL V1.08.00.0
  
 <h2>Project:</h2>
 Z:\sihan\lpc\gateway\SIHAN_LPC824_Gateway.uvprojx
-Project File Date:  03/12/2017
+Project File Date:  04/08/2017
 
 <h2>Output:</h2>
-Rebuild target 'DebugInFlash'
+Rebuild target 'gateway'
 compiling system_LPC8xx.c...
 compiling uart.c...
 assembling startup_lpc82x.s...
 compiling main.c...
-USER CODE\main.c(340): warning:  #111-D: statement is unreachable
-                CLEAR_UART(&uart0);
-USER CODE\main.c(440): warning:  #61-D: integer operation result is out of range
+user_code\main.c(471): warning:  #61-D: integer operation result is out of range
       LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
-USER CODE\main.c(901): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
+user_code\main.c(932): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
         u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
-USER CODE\main.c: 3 warnings, 0 errors
+user_code\main.c: 2 warnings, 0 errors
+compiling queue.c...
 linking...
-Program Size: Code=5248 RO-data=224 RW-data=8 ZI-data=1008  
+Program Size: Code=6384 RO-data=224 RW-data=12 ZI-data=4268  
 FromELF: creating hex file...
-".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 3 Warning(s).
+".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 2 Warning(s).
 
 <h2>Collection of Component include folders:</h2>
   Z:\sihan\lpc\gateway\RTE
@@ -48,9 +47,9 @@ FromELF: creating hex file...
 
 <h2>Collection of Component Files used:</h2>
 Load "Z:\\sihan\\lpc\\gateway\\Objects\\SIHAN_LPC824_Gateway.axf" 
-* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
 Set JLink Project File to "Z:\sihan\lpc\gateway\JLinkSettings.ini"
-* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
  
 JLink info:
 ------------
@@ -67,7 +66,7 @@ ROMTableAddr = 0xE00FF003
 Target info:
 ------------
 Device: LPC824M201JHI33
-VTarget = 2.750V
+VTarget = 2.730V
 State of Pins: 
 TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
 Hardware-Breakpoints: 4
@@ -79,12 +78,23 @@ Full Chip Erase Done.
 Programming Done.
 Verify OK.
 Application running ...
-</pre>
-</body>
-</html>
- (0 KB flash, 0 KB RAM).
+ 2
+JTAG speed: 2000 kHz
+ 
+Full Chip Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+amming Done.
+Verify OK.
+Application running ...
+se Done.
+Programming Done.
+Verify OK.
+Application running ...
+flash, 0 KB RAM).
 Set JLink Project File to "Z:\sihan\lpc\gateway\JLinkSettings.ini"
-* JLink Info: Device "UNSPECIFIED" selected (0 KB flash, 0 KB RAM).
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
  
 JLink info:
 ------------
@@ -101,7 +111,7 @@ ROMTableAddr = 0xE00FF003
 Target info:
 ------------
 Device: LPC824M201JHI33
-VTarget = 2.743V
+VTarget = 2.704V
 State of Pins: 
 TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
 Hardware-Breakpoints: 4

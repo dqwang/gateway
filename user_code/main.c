@@ -1,4 +1,6 @@
 #include "main.h"
+#include "packet_def.h"
+
 
 /******************************************************************************/
 #define GPIO_LED1	(1 << 17)//LED1 P0.17
@@ -26,27 +28,23 @@
 #define UART1_BPS	115200/*GPRS*/
 #define UART2_BPS	115200/*WIFI and RJ45*/
 
+#define UART_RBUF_SIZE (SERVER_PACKET_SIZE*SERVER_PACKET_NUM_MAX)// for server: 24 packet max, for lock: 28 packet max 
+#define UART_SBUF_SIZE (LOCK_PACKET_SIZE*2)
 
-#define UART_RBUF_SIZE (64)
+#define WIFI_RECV_TIME 100 //ms
+
 
 typedef struct uart{
 	u8 rflag;
 	u8 rbusy;
-	u8 rindex;
+	u16 rindex;
 	u8 rbuf[UART_RBUF_SIZE];
 	u8 slen;
 	u8 sindex;
-	u8 sbuf[UART_RBUF_SIZE];
+	u8 sbuf[UART_SBUF_SIZE];
 }uart_t;
 
-typedef enum ERRNO{
-	EOK = 0,
-	E_INVALID_PACKET,
-	E_NULL_POINTER,
-	E_INVALID_CMD,
 
-	
-}errno_t;
 
 /*
 typedef struct packet{
@@ -65,14 +63,18 @@ uart_t uart2;
 
 
 
-
 //#define DEBUG_LOG(buf, len) uart0_sendbuf(buf, len)
 #define DEBUG_LOG(buf, len)
 
 
-#define send2server(buf,len) uart2_sendbuf(buf, len)
+#define send2server(buf, len) uart2_sendbuf(buf, len)
+#define send2lock(buf, len)	uart0_sendbuf(buf, len);
+
 
 #define CLEAR_UART(p) memset(p,0x0,sizeof(uart_t))
+
+#define CLEAR_TYPE(p, type) memset(p, 0x00, sizeof(type))
+
 
 
 typedef enum {
@@ -101,6 +103,13 @@ typedef struct gprs_{
 
 gprs_t gprs;
 
+rfac_u gw_addr_channel;
+
+Queue sq;//server queue
+Queue lq;//lock queue
+
+int sq_buf[SERVER_PACKET_NUM_MAX];
+int lq_buf[LOCK_PACKET_NUM_MAX];
 
 /*****************************function prototype*******************************/
 
@@ -114,6 +123,7 @@ void gpio_init_rf433m_mode(void);
 void gpio_init_wifi(void);
 
 void gprs_init(void);
+void queue_init(void);
 
 
 
@@ -125,6 +135,12 @@ void hwapi03_rf433m_mode(u8 mode);
 void hwapi04_wifi_reset(void);
 void hwapi05_wifi_factory(void);
 void hwapi06_rj45_reset(void);
+
+void hwapi07_mod_uart0_baud(u32 baud);
+void hwapi07_rf433m_mode3_prepare(void);
+void hwapi07_rf433m_get_addr_channel(void);
+void hwapi07_rf433m_set_config(void);
+
 
 
 void gprs_trs_config(void);
@@ -148,6 +164,8 @@ void test_hwapi05_wifi_factory(void);
 void test_hwapi06_rj45_reset(void);
 
 
+
+
 void test_wifi_uart2(void);
 void test_rj45_uart2(void);
 
@@ -158,11 +176,20 @@ void test_gprs(void);
 
 void uart2_sendbuf(u8* buf, u16 size);
 
+
+
 /******************************************************************************/
 
 
 
-void myDelay (uint32_t ulTime)
+void CLEAR_UART_RECV(uart_t *p)
+{
+	p->rflag=0;
+	p->rindex=0;
+}
+
+
+void delay_ms (uint32_t ulTime)
 {
     uint32_t i;
     
@@ -324,27 +351,31 @@ void UART0_IRQHandler (void)
 void uart0_thread(void)
 {
 	if (uart0.rflag == 1){
-		myDelay(10);//waiting until the packet done
+		delay_ms(20);//waiting until the packet done
 		
-		#if 1
-		//debug
-		//uart0_sendbuf(uart0.rbuf, uart0.rindex);
-
-		send2server(uart0.rbuf,uart0.rindex);
-		myDelay(10);
-		CLEAR_UART(&uart2);
+		send2server(uart0.rbuf,uart0.rindex);		
+		CLEAR_UART_RECV(&uart0);
 		
-		return;
-		#endif
-
-		CLEAR_UART(&uart0);
-		//CLEAR_PACKET(&server);
 	}
 }
 
+
 void uart2_thread(void)
 {
-	
+	if (uart2.rflag == 1){
+		/*wifi 模块全功耗模式大概10ms接收完毕，若低功耗模式可能需要200ms*/
+		#if 1//delay mode
+		delay_ms(WIFI_RECV_TIME);//waiting until the packet done
+		send2lock(uart2.rbuf, uart2.rindex);	
+
+		delay_ms(10);
+				
+		CLEAR_UART_RECV(&uart2);	
+		#else//ring mode
+		//if (uart2.rindex >){}
+		
+		#endif
+	}
 }
 
 void UART1SendEnable(void)
@@ -510,9 +541,9 @@ void hwapi01_beep_crtl(u8 on_off)
 void test_hwapi01_beep_crtl(void)
 {
 	hwapi01_beep_crtl(1);//beep on
-	myDelay(1000);
+	delay_ms(1000);
 	hwapi01_beep_crtl(0);//beep off
-	myDelay(1000);
+	delay_ms(1000);
 }
 
 
@@ -560,11 +591,11 @@ void test_hwapi02_led_ctrl(void)
 	hwapi02_led1_ctrl(1);//led on
 	hwapi02_led2_ctrl(1);//led on
 	hwapi02_led3_ctrl(1);//led on
-	myDelay(1000);
+	delay_ms(100);
 	hwapi02_led1_ctrl(0);//led off
 	hwapi02_led2_ctrl(0);//led off
 	hwapi02_led3_ctrl(0);//led off	
-	myDelay(1000);
+	delay_ms(100);
 }
 
 void gpio_init_rf433m_mode(void)
@@ -611,18 +642,17 @@ void hwapi03_rf433m_mode(u8 mode)
 void test_hwapi03_rf433m_mode(void)
 {
 	hwapi03_rf433m_mode(0);
-	myDelay(1000);
+	delay_ms(1000);
 	hwapi03_rf433m_mode(3);
-	myDelay(1000);	
+	delay_ms(1000);	
 }
-
 
 void test_uart0_echo(void)
 {
 	if (uart0.rflag == 1){
-		//myDelay(10);//waiting until the packet done
+		//delay_ms(10);//waiting until the packet done
 		uart0_sendbuf(uart0.rbuf, uart0.rindex);
-		CLEAR_UART(&uart0);
+		CLEAR_UART_RECV(&uart0);
 	}
 }
 
@@ -630,19 +660,20 @@ void test_uart0_echo(void)
 void test_uart1_echo(void)
 {
 	if (uart1.rflag == 1){
-		//myDelay(10);//waiting until the packet done
+		//delay_ms(10);//waiting until the packet done
 
 		uart1_sendbuf(uart1.rbuf, uart1.rindex);
-		CLEAR_UART(&uart1);
+		CLEAR_UART_RECV(&uart1);
 	}
 }
 
 void test_uart2_echo(void)
 {
 	if (uart2.rflag == 1){
-		//myDelay(10);//waiting until the packet done
+		delay_ms(10);//waiting until the packet done
 		uart2_sendbuf(uart2.rbuf, uart2.rindex);
-		CLEAR_UART(&uart2);
+
+		CLEAR_UART_RECV(&uart2);
 	}
 }
 
@@ -650,21 +681,21 @@ void test_uart0_send(void)
 {
 	u8 sbuf[1]={0x01};
 	uart0_sendbuf(sbuf,sizeof(sbuf));
-	myDelay(1);
+	delay_ms(1);
 }
 
 void test_uart1_send(void)
 {
 	u8 sbuf[1]={0x01};
 	uart1_sendbuf(sbuf,sizeof(sbuf));
-	myDelay(1);
+	delay_ms(1);
 }
 
 void test_uart2_send(void)
 {
 	u8 sbuf[1]={0x01};
 	uart2_sendbuf(sbuf,sizeof(sbuf));
-	myDelay(1);
+	delay_ms(1);
 }
 
 void gpio_init_wifi(void)
@@ -687,22 +718,22 @@ void gpio_init_wifi(void)
 void hwapi04_wifi_reset(void)
 {
 	gpio_ctrl(GPIO_WIFI_RESET, GPIO_LOW);
-	myDelay(20);//must be more than 10ms
+	delay_ms(20);//must be more than 10ms
 	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
 }
 
 void test_hwapi04_wifi_reset(void)
 {
-	myDelay(1000);
+	delay_ms(1000);
 	hwapi04_wifi_reset();
-	myDelay(1000);
+	delay_ms(1000);
 }
 
 //需增加flash flag, 记录是否已经恢复过出厂设置。
 void hwapi05_wifi_factory(void)
 {
 	gpio_ctrl(GPIO_WIFI_FACTORY, GPIO_LOW);
-	myDelay(3500);//must be more than 3s
+	delay_ms(3500);//must be more than 3s
 	gpio_ctrl(GPIO_WIFI_FACTORY, GPIO_HIGH);
 }
 
@@ -715,7 +746,7 @@ void test_wifi_uart2(void)
 {
 	u8 sbuf[1]={0x0a};
 	uart2_sendbuf(sbuf,sizeof(sbuf));
-	myDelay(1);
+	delay_ms(1);
 	//checkpoint
 	//signal should be ok in hardware
 	//PC rak415 tool should receive the data from mcu
@@ -726,22 +757,22 @@ void test_wifi_uart2(void)
 void hwapi06_rj45_reset(void)
 {
 	gpio_ctrl(GPIO_WIFI_RESET, GPIO_LOW);
-	myDelay(250);//must be more than 200ms
+	delay_ms(250);//must be more than 200ms
 	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
 }
 
 void test_hwapi06_rj45_reset(void)
 {
-	myDelay(1000);
+	delay_ms(1000);
 	hwapi06_rj45_reset();
-	myDelay(1000);
+	delay_ms(1000);
 }
 
 void test_rj45_uart2(void)
 {
 	u8 sbuf[1]={0x0b};
 	uart2_sendbuf(sbuf,sizeof(sbuf));
-	myDelay(1);
+	delay_ms(1);
 }
 
 void gprs_reg(void)
@@ -753,7 +784,7 @@ void gprs_reg(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(reg_cmd);
-		myDelay(5000);
+		delay_ms(5000);
 		for(i=0;i<uart1.rindex;i++){
 			if (uart1.rbuf[i] == ':'){
 				if (uart1.rbuf[i+2] == '1' && uart1.rbuf[i+4] == '1'){
@@ -786,7 +817,7 @@ void gprs_close_echo(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(close_echo_cmd);
-		myDelay(1000);
+		delay_ms(1000);
 
 		if (EOK == check_gprs_cmd_ack(close_echo_ok, uart1.rbuf)){
 			gprs.gprs_flag = GPRS_FLAG2_CLOSE_ECHO;
@@ -804,7 +835,7 @@ void gprs_att(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(att_cmd);
-		myDelay(1000);
+		delay_ms(1000);
 
 		if (EOK == check_gprs_cmd_ack(att_ok, uart1.rbuf)){
 			gprs.gprs_flag = GPRS_FLAG3_GATT;
@@ -822,7 +853,7 @@ void gprs_act(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(act_cmd);
-		myDelay(3000);
+		delay_ms(3000);
 		if (EOK == check_gprs_cmd_ack(act_ok, uart1.rbuf)){
 			gprs.gprs_flag = GPRS_FLAG4_GACT;
 			// 语音提示 GPRS PDP激活成功
@@ -839,7 +870,7 @@ void gprs_connect_tcp(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(connect_tcp_cmd);
-		myDelay(3000);
+		delay_ms(3000);
 
 		if (EOK == check_gprs_cmd_ack(connect_tcp_ok, uart1.rbuf)){
 			gprs.gprs_flag = GPRS_FLAG5_CONNECT_TCP;
@@ -858,7 +889,7 @@ void gprs_trs_config(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(trs_config_cmd);
-		myDelay(1000);
+		delay_ms(1000);
 
 		if (EOK == check_gprs_cmd_ack(trs_config_ok, uart1.rbuf)){
 			gprs.gprs_flag = GPRS_FLAG6_TRS_CONFIG;
@@ -877,7 +908,7 @@ void gprs_trs_open(void)
 	do{
 		CLEAR_UART(&uart1);
 		GPRS_SEND_CMD(trs_open_cmd);
-		myDelay(1000);
+		delay_ms(1000);
 		if (EOK == check_gprs_cmd_ack(trs_open_ok, uart1.rbuf)){
 			gprs.gprs_flag = GPRS_FLAG7_TRS_OPEN;
 			// 语音提示 GPRS 透传模式开启
@@ -932,7 +963,7 @@ void gprs_reconnect_server(void)
 void test_gprs(void)
 {
 	if (uart1.rflag == 1 && gprs.gprs_flag == GPRS_FLAG8_USER_DATA){
-		myDelay(10);//waiting until the packet done
+		delay_ms(10);//waiting until the packet done
 
 		uart1_sendbuf(uart1.rbuf, uart1.rindex);
 
@@ -976,9 +1007,39 @@ void hwapi07_rf433m_get_config(void)
 	uart0_sendbuf(cmd1_buf, sizeof(cmd1_buf));
 }
 
+void hwapi07_rf433m_get_addr_channel(void)
+{
+	u8 cmd_buf[3]={0xc1,0xc1,0xc1};	
+
+	CLEAR_TYPE(&gw_addr_channel, rfac_u);
+
+	//mode3
+	delay_ms(500);
+	hwapi07_rf433m_mode3_prepare();
+	delay_ms(500);
+	//send
+	uart0_sendbuf(cmd_buf, sizeof(cmd_buf));
+	delay_ms(20);
+
+	//recv
+	if (uart0.rflag == 1){		
+		if (0xc0 == uart0.rbuf[0]){
+			memcpy(gw_addr_channel.rfac2.addr, &uart0.rbuf[1], RF_ADDR_SIZE);
+			gw_addr_channel.rfac1.channel = uart0.rbuf[6];
+		}
+		//debug log
+		//send2server(gw_addr_channel.rfac0, sizeof(rfac_u));
+		
+		CLEAR_UART_RECV(&uart0);
+	}else{
+		send2server(gw_addr_channel.rfac0, sizeof(rfac_u));
+		CLEAR_UART_RECV(&uart0);
+	}	
+}
+
 void hwapi07_rf433m_set_config(void)
 {
-	u8 cmd2_buf[8]={0xc0,0x00,0x00,0x00,0x01,0x3a,0x11,0xec};
+	u8 cmd2_buf[8]={0xc0,0x00,0x00,0x00,0x01,0x3a,0x11,0xdc};
 	uart0_sendbuf(cmd2_buf, sizeof(cmd2_buf));
 }
 
@@ -992,7 +1053,7 @@ void hwapi07_rf433m_reset(void)
 
 
 //mode3
-void hwapi07_rf433m_config_prepare(void)
+void hwapi07_rf433m_mode3_prepare(void)
 {	
 	hwapi03_rf433m_mode(RF_CONFIG_MODE);
 	hwapi07_mod_uart0_baud(UART0_BPS_CONFIG_RF433M);
@@ -1004,17 +1065,17 @@ void hwapi07_rf433m_config_prepare(void)
 void test_hwapi07_rf433m_get_config(void)
 {
 	//hwapi07_rf433m_reset();
-	myDelay(1000);//if test this in main-loop, the delay must be needed.
+	delay_ms(1000);//if test this in main-loop, the delay must be needed.
 	hwapi07_rf433m_get_config();
 
-	//myDelay(100);
+	//delay_ms(100);
 }
 
 void test_hwapi07_rf433m_set_config(void)
 {
-	myDelay(1000);
+	delay_ms(1000);
 	hwapi07_rf433m_set_config();
-	//myDelay(100);
+	//delay_ms(100);
 }
 
 
@@ -1027,14 +1088,14 @@ void test_rf433m_aux(void)
 
 
 //mode1
-void hwapi08_rf433m_mode1_send_prepare(void)
+void hwapi08_rf433m_mode1_prepare(void)
 {	
 	hwapi03_rf433m_mode(RF_WAKEUP_MODE);
 	hwapi07_mod_uart0_baud(UART0_BPS);
 }
 
 
-void hwapi08_rf433m_mode1_send(u8 *addr_buf, u8 channel, u8 *data_buf, u8 data_size)
+void hwapi08_rf433m_send(u8 *addr_buf, u8 channel, u8 *data_buf, u8 data_size)
 {
 	u8 buf[5+32]={0};
 	//set mode , optional
@@ -1060,37 +1121,268 @@ void test_rf433m_mode1_transport(void)
 	u8 data_size = 32;
 
 
-	hwapi08_rf433m_mode1_send_prepare();
-	hwapi08_rf433m_mode1_send(addr_buf, channel,data_buf,data_size);
-	myDelay(1000);
+	hwapi08_rf433m_mode1_prepare();
+	hwapi08_rf433m_send(addr_buf, channel,data_buf,data_size);
+	delay_ms(1000);
+}
+
+//mode0
+
+void hwapi08_rf433m_mode0_prepare(void)
+{	
+	hwapi03_rf433m_mode(RF_NORMAL_MODE);
+	hwapi07_mod_uart0_baud(UART0_BPS);
+}
+
+void test_rf433m_mode0_transport(void)
+{
+	u8 addr_buf[4]={0x00, 0x00, 0x00,0x02};
+	u8 channel = 0x28;
+	u8 data_buf[32]={0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07, 0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,
+					 0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17, 0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f};
+	u8 data_size = 32;
+
+
+	hwapi08_rf433m_mode0_prepare();
+	hwapi08_rf433m_send(addr_buf, channel,data_buf,data_size);
+	delay_ms(1000);
 }
 
 
+errno_t is_valid_packet_from_server(u8 *in_buf)
+{
+	//header tail length
+	u8 tail[2] = {0x0D, 0x0A};
+	
+	if (0 == memcmp(in_buf, gw_addr_channel.rfac0, sizeof(rfac_u)) && 0 == memcmp(in_buf + SERVER_PACKET_SIZE -2, tail, 2))
+		return EOK;
+	else
+		return E_INVALID_PACKET;
+}
+
+errno_t is_valid_packet_from_lock(u8 *in_buf)
+{
+	//header length
+
+	return EOK;
+}
+
+/*----------------------------------------------------------------------------*/
+
+
+void hwapi10_decode_packet_from_lock()
+{
+
+}
+
+void hwapi10_encode_packet_to_server(u32 in_gw_addr, u8 in_gw_channel, lpkt_u *in_lp, sp_u *out_sp)
+{
+	//encode
+	
+}
+
+
+void hwapi10_handle_packet_from_lock()
+{
+	
+}
+
+
+
+/*----------------------------------------------------------------------------*/
+
+void hwapi09_ack_error_to_server(errno_t errno)
+{
+	//todo
+	sp_u sp;
+
+	CLEAR_TYPE(&sp, sp_u);
+	
+	memcpy(sp.sp0, gw_addr_channel.rfac0, sizeof(rfac_u));
+	memset(sp.sp0 + sizeof(rfac_u), (u8)errno, LOCK_PACKET_SIZE);
+	SH_PUT_2_BYTE(sp.sp2.tail,TAIL_ENTER);
+	
+	send2server(sp.sp0, SERVER_PACKET_SIZE);
+}
+
+errno_t hwapi09_decode_packet_from_server(u8 *in_buf, sp_u *out_sp)
+{
+
+	if (NULL == in_buf || NULL == out_sp){
+		return 	E_NULL_POINTER;
+	}
+	
+	if (EOK == is_valid_packet_from_server(in_buf)){
+		memcpy(out_sp->sp0, in_buf, sizeof(sp_u)); //decode
+		return EOK;
+	}else{
+		return E_INVALID_PACKET;
+	}	
+}
+
+errno_t hwapi09_encode_packet_to_lock(sp_u *in_sp)
+{
+	lpkt_u lpkt;
+
+	if (NULL == in_sp){
+		return E_NULL_POINTER;
+	}
+
+	memcpy(lpkt.lpkt0, in_sp->sp2.lpkt.lpkt0, sizeof(lpkt_u));
+	send2lock(lpkt.lpkt0, sizeof(lpkt_u));
+
+	return EOK;
+}
+
+void hwapi09_handle_packet_from_server(u8 *in_buf)
+{
+	sp_u    sp;
+	errno_t ret = EOK;
+
+	if (NULL == in_buf){
+		return;
+	}
+	
+	ret = hwapi09_decode_packet_from_server(in_buf, &sp);
+	if (ret != EOK)
+		goto ACK_ERROR_TO_SERVER;
+	
+	ret = hwapi09_encode_packet_to_lock(&sp);
+	if (ret != EOK)
+		goto ACK_ERROR_TO_SERVER;
+	
+	return;
+	
+ACK_ERROR_TO_SERVER:
+	hwapi09_ack_error_to_server(ret);
+}
+
+/*----------------------------------------------------------------------------*/
+
+ 
+void handle_server_packet_thread(void)
+{
+	int i=0;
+
+	if (uart2.rflag == 1){
+	
+		#if 1//delay mode
+		delay_ms(WIFI_RECV_TIME);/*wifi 模块全功耗模式大概10ms接收完毕，若低功耗模式可能需要200ms*/
+
+		//header
+		for (i=0; i<UART_RBUF_SIZE-SERVER_PACKET_SIZE+1; i++){
+			if (EOK == is_valid_packet_from_server(uart2.rbuf+i)){
+				Enqueue(&sq, i);				
+			}
+		}
+
+		while (!is_queue_empty(&sq)){
+			hwapi09_handle_packet_from_server(uart2.rbuf + front(&sq));
+			Dequeue(&sq);
+			delay_ms(80);//send	
+		}
+		CLEAR_UART(&uart2);
+		
+		#else//ring mode
+		if (uart2.rindex ){
+			
+
+		
+		#endif
+	}
+
+	//manypacket
+}
+
+
+
+void test_server_packet_union(void)
+{
+	sp_u sp_u;
+
+	/*
+
+	wrong order
+	01 00 00 00 11 02 00 00 00 28 78 56 34 12 59 56 01 01 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13 14 15 ff ff 0a 0d 
+	right order
+	00 00 00 01 11 00 00 00 02 28 12 34 56 78 56 59 01 01 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13 14 15 ee ff 0d 0a 
+	000000011100000002281234567856590101000102030405060708090a0b0c0d0e0f101112131415eeff0d0a
+	*/
+
+	/*step 1, encode plaintext*/
+
+	u8 x[LOCK_DATA_PAYLOAD_SIZE_MAX]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21};
+
+
+	SH_PUT_4_BYTE(sp_u.sp2.gw_addr,0x00000001);
+	sp_u.sp2.gw_channel[0]=0x11;
+	
+	
+	SH_PUT_4_BYTE(sp_u.sp2.lpkt.lpkt2.lock_addr, 0x00000002);
+	sp_u.sp2.lpkt.lpkt2.lock_channel[0]=0x28;
+
+	SH_PUT_4_BYTE(sp_u.sp2.lpkt.lpkt2.lpro.lpro2.rnd,0x12345678);
+	SH_PUT_2_BYTE(sp_u.sp2.lpkt.lpkt2.lpro.lpro2.header,0x5659);
+	sp_u.sp2.lpkt.lpkt2.lpro.lpro2.len[0]=0x01;	
+	sp_u.sp2.lpkt.lpkt2.lpro.lpro2.cmd[0]=0x01;
+
+	memcpy(sp_u.sp2.lpkt.lpkt2.lpro.lpro2.lpp.lpp0, x, sizeof(x));
+
+	SH_PUT_2_BYTE(sp_u.sp2.lpkt.lpkt2.lpro.lpro2.crc, 0xeeff);	
+
+	SH_PUT_2_BYTE(sp_u.sp2.tail,TAIL_ENTER);
+
+
+	/*step. send*/
+	send2server(sp_u.sp0, sizeof(sp_u));
+	delay_ms(10000);
+}
+
+
+void queue_init(void)
+{
+	createQueue(SERVER_PACKET_NUM_MAX, &sq, sq_buf);
+	createQueue(LOCK_PACKET_NUM_MAX, &lq, lq_buf);
+}
+
+
+//get own rf433m addr and channel when system startup
+
 int main(void)
 {
-	myDelay(1000);//system poweron
-	
+	//delay_ms(1000);
     SystemInit();                                                       /* 初始化目标板，切勿删除       */
-    GPIOInit();                                                         /* GPIO初始化                   */
+	delay_ms(100);//system poweron,for gprs
 
+    GPIOInit();                                                         /* GPIO初始化                   */
 	WKTInit();
 
 	UART0Init();
 	UART1Init();
 	UART2Init();
+	
+	queue_init();
+	//hwapi04_wifi_reset();
 
+	hwapi07_rf433m_get_addr_channel();
+
+	
 	//gprs_init();
 	//test_hwapi05_wifi_factory();
 
-	//hwapi07_rf433m_config_prepare();
+	//hwapi07_rf433m_mode3_prepare();
 	
-	hwapi08_rf433m_mode1_send_prepare();
+	//hwapi08_rf433m_mode1_prepare();
+
+	hwapi08_rf433m_mode0_prepare();
+	
+	
 	
     while (1) {
 		
 		//uart0_thread();
 		//uart2_thread();
-
+		//test_server_packet_union();
 		//test_hwapi01_beep_crtl();
 		//test_hwapi02_led_ctrl();
 		//test_hwapi03_rf433m_mode();
@@ -1111,7 +1403,10 @@ int main(void)
 
 		//test_hwapi07_rf433m_get_config();
 		//test_hwapi07_rf433m_set_config();
-		test_rf433m_mode1_transport();
+		//test_rf433m_mode1_transport();
+		//test_rf433m_mode0_transport();
+
+		handle_server_packet_thread();
     }
 }
 
