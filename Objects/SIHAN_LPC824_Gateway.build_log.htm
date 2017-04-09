@@ -28,16 +28,17 @@ Project File Date:  04/08/2017
 Rebuild target 'gateway'
 compiling system_LPC8xx.c...
 compiling uart.c...
+LPC8xx\uart.c(180): warning:  #61-D: integer operation result is out of range
+      LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
+LPC8xx\uart.c: 1 warning, 0 errors
 assembling startup_lpc82x.s...
 compiling main.c...
-user_code\main.c(475): warning:  #61-D: integer operation result is out of range
-      LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
-user_code\main.c(936): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
+user_code\main.c(675): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
         u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
-user_code\main.c: 2 warnings, 0 errors
+user_code\main.c: 1 warning, 0 errors
 compiling queue.c...
 linking...
-Program Size: Code=6824 RO-data=224 RW-data=12 ZI-data=4364  
+Program Size: Code=6820 RO-data=224 RW-data=12 ZI-data=4364  
 FromELF: creating hex file...
 ".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 2 Warning(s).
 
@@ -58,41 +59,9 @@ Firmware: J-Link ARM V8 compiled Nov 28 2014 13:44:46
 Hardware: V8.00
 Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFULL 
  
-* JLink Info: Found SWD-DP with ID 0x0BC11477
-* JLink Info: Found Cortex-M0 r0p1, Little endian.
-* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
-ROMTableAddr = 0xE00FF003
- 
-Target info:
-------------
-Device: LPC824M201JHI33
-VTarget = 2.627V
-State of Pins: 
-TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
-Hardware-Breakpoints: 4
-Software-Breakpoints: 8192
-Watchpoints:          2
-JTAG speed: 2000 kHz
- 
-Full Chip Erase Done.
-Programming Done.
-Verify OK.
-Application running ...
-Erase Done.
-Programming Done.
-Verify OK.
-Application running ...
- 2000 kHz
- 
-Full Chip Erase Done.
-Programming Done.
-Verify OK.
-Application running ...
-Done.
-Programming Done.
-Verify OK.
-Application running ...
-flash, 0 KB RAM).
+Error: Flash Download failed  -  Target DLL has been cancelled
+Load "Z:\\sihan\\lpc\\gateway\\Objects\\SIHAN_LPC824_Gateway.axf" 
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
 Set JLink Project File to "Z:\sihan\lpc\gateway\JLinkSettings.ini"
 * JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
  
@@ -111,7 +80,7 @@ ROMTableAddr = 0xE00FF003
 Target info:
 ------------
 Device: LPC824M201JHI33
-VTarget = 2.704V
+VTarget = 2.743V
 State of Pins: 
 TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
 Hardware-Breakpoints: 4
@@ -123,3 +92,101 @@ Full Chip Erase Done.
 Programming Done.
 Verify OK.
 Application running ...
+ function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(reg_cmd);
+user_code\main.c(562): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(close_echo_cmd);
+user_code\main.c(580): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(att_cmd);
+user_code\main.c(598): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(act_cmd);
+user_code\main.c(615): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(connect_tcp_cmd);
+user_code\main.c(634): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(trs_config_cmd);
+user_code\main.c(653): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                GPRS_SEND_CMD(trs_open_cmd);
+user_code\main.c(675): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
+        u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
+user_code\main.c(711): warning:  #223-D: function "uart1_sendbuf" declared implicitly
+                uart1_sendbuf(uart1.rbuf, uart1.rindex);
+user_code\main.c(736): warning:  #223-D: function "UART0RecvEnable" declared implicitly
+        UART0RecvEnable();                        
+user_code\main.c(750): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        uart0_sendbuf(cmd1_buf, sizeof(cmd1_buf));
+user_code\main.c(764): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        uart0_sendbuf(cmd_buf, sizeof(cmd_buf));
+user_code\main.c(776): warning:  #223-D: function "CLEAR_UART_RECV" declared implicitly
+                CLEAR_UART_RECV(&uart0);
+user_code\main.c(778): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+                send2server(gw_addr_channel.rfac0, sizeof(rfac_u));
+user_code\main.c(779): warning:  #223-D: function "CLEAR_UART_RECV" declared implicitly
+                CLEAR_UART_RECV(&uart0);
+user_code\main.c(786): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        uart0_sendbuf(cmd2_buf, sizeof(cmd2_buf));
+user_code\main.c(793): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        uart0_sendbuf(cmd3_buf, sizeof(cmd3_buf));
+user_code\main.c(853): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        uart0_sendbuf(buf,sizeof(buf));
+user_code\main.c(919): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+        send2server(sp.sp0, SERVER_PACKET_SIZE);
+user_code\main.c(946): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        send2lock(lpkt.lpkt0, sizeof(lpkt_u));
+user_code\main.c(1062): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+        send2server(sp.sp0, sizeof(sp_u));
+user_code\main.c(1077): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        send2lock(lp.lpkt0, LOCK_PACKET_SIZE);
+user_code\main.c(1170): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+        send2server(sp_u.sp0, sizeof(sp_u));
+user_code\main.c(1193): warning:  #223-D: function "UART0Init" declared implicitly
+        UART0Init();
+user_code\main.c(1194): warning:  #223-D: function "UART1Init" declared implicitly
+        UART1Init();
+user_code\main.c(1195): warning:  #223-D: function "UART2Init" declared implicitly
+        UART2Init();
+user_code\main.c: 41 warnings, 0 errors
+compiling queue.c...
+linking...
+Program Size: Code=6820 RO-data=224 RW-data=12 ZI-data=4364  
+FromELF: creating hex file...
+".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 42 Warning(s).
+
+<h2>Collection of Component include folders:</h2>
+  Z:\sihan\lpc\gateway\RTE
+  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+
+        uart0_sendbuf(cmd3_buf, sizeof(cmd3_buf));
+user_code\main.c(852): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        uart0_sendbuf(buf,sizeof(buf));
+user_code\main.c(918): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+        send2server(sp.sp0, SERVER_PACKET_SIZE);
+user_code\main.c(945): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        send2lock(lpkt.lpkt0, sizeof(lpkt_u));
+user_code\main.c(979): error:  #20: identifier "uart2" is undefined
+        if (uart2.rflag == 1){
+user_code\main.c(1061): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+        send2server(sp.sp0, sizeof(sp_u));
+user_code\main.c(1076): warning:  #223-D: function "uart0_sendbuf" declared implicitly
+        send2lock(lp.lpkt0, LOCK_PACKET_SIZE);
+user_code\main.c(1111): error:  #20: identifier "uart0" is undefined
+        if (uart0.rflag == 1){
+user_code\main.c(1169): warning:  #223-D: function "uart2_sendbuf" declared implicitly
+        send2server(sp_u.sp0, sizeof(sp_u));
+user_code\main.c(1192): warning:  #223-D: function "UART0Init" declared implicitly
+        UART0Init();
+user_code\main.c(1193): warning:  #223-D: function "UART1Init" declared implicitly
+        UART1Init();
+user_code\main.c(1194): warning:  #223-D: function "UART2Init" declared implicitly
+        UART2Init();
+user_code\main.c: 41 warnings, 17 errors
+compiling queue.c...
+".\Objects\SIHAN_LPC824_Gateway.axf" - 17 Error(s), 42 Warning(s).
+
+<h2>Collection of Component include folders:</h2>
+  Z:\sihan\lpc\gateway\RTE
+  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+Target not created.

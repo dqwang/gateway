@@ -13,5 +13,6 @@
 .\objects\queue.o: .\LPC8xx\uart.h
 .\objects\queue.o: .\include\main.h
 .\objects\queue.o: .\include\type.h
+.\objects\queue.o: .\include\packet_def.h
 .\objects\queue.o: .\include\gpio.h
 .\objects\queue.o: .\include\queue.h

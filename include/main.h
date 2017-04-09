@@ -9,6 +9,7 @@
 #include "type.h"
 #include "gpio.h"
 #include "queue.h"
+#include "packet_def.h"
 
 
 typedef enum ERRNO{

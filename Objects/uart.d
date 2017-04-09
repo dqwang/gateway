@@ -12,5 +12,6 @@
 .\objects\uart.o: .\LPC8xx\uart.h
 .\objects\uart.o: .\include\main.h
 .\objects\uart.o: .\include\type.h
+.\objects\uart.o: .\include\packet_def.h
 .\objects\uart.o: .\include\gpio.h
 .\objects\uart.o: .\include\queue.h

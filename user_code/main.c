@@ -22,46 +22,14 @@
 #define GPIO_GPRS_INT		(1 << 14)//INT P0.14
 
 
-#define UART0_BPS   115200/*433M*/
-#define UART0_BPS_CONFIG_RF433M 9600/*mode3, 9600bps, then you can config the rf433m*/
 
-#define UART1_BPS	115200/*GPRS*/
-#define UART2_BPS	115200/*WIFI and RJ45*/
-
-#define UART_RBUF_SIZE (SERVER_PACKET_SIZE*SERVER_PACKET_NUM_MAX)// for server: 24 packet max, for lock: 28 packet max 
-#define UART_SBUF_SIZE (LOCK_PACKET_SIZE*2)
 
 #define WIFI_RECV_TIME 100 //ms
-#define RF_SEND_DELAY_TIME 80//ms
 
 
-typedef struct uart{
-	u8 rflag;
-	u8 rbusy;
-	u16 rindex;
-	u8 rbuf[UART_RBUF_SIZE];
-	u8 slen;
-	u8 sindex;
-	u8 sbuf[UART_SBUF_SIZE];
-}uart_t;
-
-
-
-/*
-typedef struct packet{
-	u8 header[2];//0x56 0x59 
-	u8 len;//total 
-	u8 cmd;
-	u8 payload[PAYLOAD_MAX_SIZE];	
-}packet_t;
-
-*/
-
-
-uart_t uart0;
-uart_t uart1;
-uart_t uart2;
-
+extern uart_t uart0;
+extern uart_t uart1;
+extern uart_t uart2;
 
 
 //#define DEBUG_LOG(buf, len) uart0_sendbuf(buf, len)
@@ -72,7 +40,7 @@ uart_t uart2;
 #define send2lock(buf, len)	uart0_sendbuf(buf, len);
 
 
-#define CLEAR_UART(p) memset(p,0x0,sizeof(uart_t))
+
 
 #define CLEAR_TYPE(p, type) memset(p, 0x00, sizeof(type))
 
@@ -176,21 +144,8 @@ void test_rj45_uart2(void);
 void test_gprs(void);
 
 
-
-
-void uart2_sendbuf(u8* buf, u16 size);
-
-
-
 /******************************************************************************/
 
-
-
-void CLEAR_UART_RECV(uart_t *p)
-{
-	p->rflag=0;
-	p->rindex=0;
-}
 
 
 void delay_ms (uint32_t ulTime)
@@ -261,48 +216,6 @@ void GPIOInit (void)
 
 
 
-
-void UART0RecvEnable(void)
-{
-	LPC_USART0->INTENSET = (1 << 0);
-}
-
-void UART0RecvDisable(void)
-{
-	LPC_USART0->INTENCLR = (1 << 0);
-}
-void UART0SendEnable(void)
-{
-	LPC_USART0->INTENSET |= (1 << 2);
-}
-
-void UART0SendDisable(void)
-{
-	LPC_USART0->INTENCLR |= (1 << 2);
-}
-
-void UART0Init (void)
-{
-    LPC_SWM->PINASSIGN[0] &= ~( 0xFFFF << 0 );
-    LPC_SWM->PINASSIGN[0] |=  ( 0 << 0 );                               /* P0.0 ~ UART0_RXD rf433m recv */
-    LPC_SWM->PINASSIGN[0] |=  ( 6 << 8 );                               /* P0.6 ~ UART0_TXD rf433m send */
-
-    LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
-    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 14);                             /* 初始化UART AHB时钟           */
-
-    LPC_USART0->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
-                      (LPC_SYSCON->UARTCLKDIV * 16 * UART0_BPS) - 1;     /* 串口通信波特率               */
-    LPC_USART0->CFG = (1 << 0) |                                        /* 使能UART                     */
-                      (1 << 2) |                                        /* 8位数据位                    */
-                      (0 << 4) |                                        /* 无校验                       */
-                      (0 << 6);                                         /* 1位停止位                    */
-
-	UART0RecvEnable();                        
-    NVIC_EnableIRQ(UART0_IRQn);	
-
-	CLEAR_UART(&uart0);
-}
-
 void gpio_ctrl(uint32_t gpio, uint32_t value)
 {
 	if (value == GPIO_LOW)
@@ -319,38 +232,7 @@ void gpio_dir(uint32_t gpio, uint32_t dir)
 		LPC_GPIO_PORT->DIR[0] |=  gpio;
 }
 
-void uart0_sendbuf(u8* buf, u16 size) 
-{
-	if (buf == NULL || size <=0){
-		return;
-	}
-	memcpy(uart0.sbuf, buf, size);
-	uart0.slen = size;
-	uart0.sindex = 0;
-	UART0SendEnable();
-}
 
-void UART0_IRQHandler (void)
-{
-    if (LPC_USART0->STAT & 0x01) {//recv
-		uart0.rbuf[uart0.rindex++] = LPC_USART0->RXDATA;
-		if (uart0.rindex >= UART_RBUF_SIZE){
-			uart0.rindex = 0;
-		}
-		uart0.rflag=1;
-    }
-
-	if (LPC_USART0->STAT & 0x04) {//send
-		if (uart0.slen == 0){
-			return;
-		}
-		LPC_USART0->TXDATA = uart0.sbuf[uart0.sindex++];
-		if (uart0.sindex >= uart0.slen) {
-			UART0SendDisable();
-			uart0.slen=0;
-		}
-	}
-}
 
 void uart0_thread(void)
 {
@@ -381,149 +263,6 @@ void uart2_thread(void)
 		#endif
 	}
 }
-
-void UART1SendEnable(void)
-{
-	LPC_USART1->INTENSET |= (1 << 2);
-}
-
-void UART1SendDisable(void)
-{
-	LPC_USART1->INTENCLR |= (1 << 2);
-}
-
-void UART1RecvEnable(void)
-{
-	LPC_USART1->INTENSET = (1 << 0);
-}
-
-void UART1Init (void)
-{
-    LPC_SWM->PINASSIGN[1] &= ~( 0xFFFF << 8 );
-    LPC_SWM->PINASSIGN[1] |=  ( 21 << 8 );                               /* P0.21 ~ UART1_TXD             */
-    LPC_SWM->PINASSIGN[1] |=  ( 22 << 16 );                              /* P0.22 ~ UART1_RXD             */
-
-    LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
-    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 15);                             /* 初始化UART AHB时钟           */
-
-    LPC_USART1->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
-                      (LPC_SYSCON->UARTCLKDIV * 16 * UART1_BPS) - 1;     /* 串口通信波特率               */
-    LPC_USART1->CFG = (1 << 0) |                                        /* 使能UART                     */
-                      (1 << 2) |                                        /* 8位数据位                    */
-                      (0 << 4) |                                        /* 无校验                       */
-                      (0 << 6);                                         /* 1位停止位                    */
-
-    LPC_USART1->INTENSET = (1 << 0);                                    /* 使能接收中断                 */
-    NVIC_EnableIRQ(UART1_IRQn);                                         /* 打开UART中断                 */
-}
-
-void UART1_IRQHandler (void)
-{
-	if (LPC_USART1->STAT & 0x01) {//recv
-		#if 1
-		uart1.rbuf[uart1.rindex++] = LPC_USART1->RXDATA;
-		if (uart1.rindex >= UART_RBUF_SIZE){
-			uart1.rindex = 0;
-		}
-		uart1.rflag=1;
-		#else
-		uart_test =  LPC_USART1->RXDATA;
-		UART1SendEnable();
-		#endif
-    }               
-	if (LPC_USART1->STAT & 0x04) {//send
-	#if 1
-		if (uart1.slen == 0){
-			return;
-		}
-		LPC_USART1->TXDATA = uart1.sbuf[uart1.sindex++];
-		if (uart1.sindex >= uart1.slen) {
-			UART1SendDisable();
-			uart1.slen=0;
-		}
-	#else
-		LPC_USART1->TXDATA = uart_test;
-		UART1SendDisable();
-	#endif
-	}
-}
-
-void uart1_sendbuf(u8* buf, u16 size)
-{
-	if (buf == NULL || size <=0){
-		return;
-	}
-	memcpy(uart1.sbuf, buf, size);
-	uart1.slen = size;
-	uart1.sindex = 0;
-	UART1SendEnable();
-}
-
-
-void UART2SendEnable(void)
-{
-	LPC_USART2->INTENSET |= (1 << 2);
-}
-
-void UART2SendDisable(void)
-{
-	 LPC_USART2->INTENCLR |= (1 << 2);
-}
-
-void UART2Init (void)
-{
-    LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
-    LPC_SWM->PINASSIGN[2] |=  ( 16 << 16 );                              /* P0.16 ~ UART2_TXD             */
-    LPC_SWM->PINASSIGN[2] |=  ( 10 << 24 );                              /* P0.10 ~ UART2_RXD             */
-
-    LPC_SYSCON->UARTCLKDIV     = 1;                                     /* UART时钟分频值为 1           */
-    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 16);                             /* 初始化UART AHB时钟           */
-
-    LPC_USART2->BRG = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
-                      (LPC_SYSCON->UARTCLKDIV * 16 * UART2_BPS) - 1;     /* 串口通信波特率               */
-    LPC_USART2->CFG = (1 << 0) |                                        /* 使能UART                     */
-                      (1 << 2) |                                        /* 8位数据位                    */
-                      (0 << 4) |                                        /* 无校验                       */
-                      (0 << 6);                                         /* 1位停止位                    */
-
-    LPC_USART2->INTENSET = (1 << 0);                                    /* 使能接收中断                 */
-    NVIC_EnableIRQ(UART2_IRQn);                                         /* 打开UART中断                 */
-}
-
-void UART2_IRQHandler (void)
-{
-    if (LPC_USART2->STAT & 0x01) {                                      /* 接收中断                     */
-		uart2.rbuf[uart2.rindex++] = LPC_USART2->RXDATA;
-		if (uart2.rindex >= UART_RBUF_SIZE){
-			uart2.rindex = 0;
-		}
-		uart2.rflag=1;
-    }
-
-    if (LPC_USART2->STAT & 0x04) {                                      /* 发送中断                     */
-		if (uart2.slen == 0){
-			return;
-		}
-		LPC_USART2->TXDATA = uart2.sbuf[uart2.sindex++];
-		if (uart2.sindex >= uart2.slen) {
-			UART2SendDisable();
-			uart2.slen=0;
-		}
-    }
-}
-
-void uart2_sendbuf(u8* buf, u16 size)
-{
-	if (buf == NULL || size <=0){
-		return;
-	}
-	memcpy(uart2.sbuf, buf, size);
-	uart2.slen = size;
-	uart2.sindex = 0;
-	UART2SendEnable();
-}
-
-
 
 /*TDD: Testing Driven Develop*/
 
