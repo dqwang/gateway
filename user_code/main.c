@@ -1,24 +1,6 @@
 #include "main.h"
 
 /******************************************************************************/
-#define GPIO_LED1	(1 << 17)//LED1 P0.17
-#define GPIO_LED2	(1 << 18)//LED2 P0.18
-#define GPIO_LED3	(1 << 19)//LED3 P0.19
-#define GPIO_BEEP	(1 << 12)//beep P0.12
-
-#define GPIO_M0		(1 << 7)//RF_CTL1 P0.7
-#define GPIO_M1		(1 << 8)//RF_CTL2 P0.8
-#define GPIO_AUX 	(1 << 9)//RF_CTL3 P0.9
-
-
-#define GPIO_WIFI_MODE_WPS	(1 << 24)//MODE/WPS P0.24
-#define GPIO_WIFI_SLEEP		(1 << 25)//SLEEP P0.25
-#define GPIO_WIFI_FACTORY	(1 << 26)//FACTORY P0.26
-#define GPIO_WIFI_RESET 	(1 << 27)//RESET P0.27
-
-
-#define WIFI_RECV_TIME 100 //ms
-
 
 extern uart_t uart0;
 extern uart_t uart1;
@@ -107,45 +89,6 @@ void test_gprs(void);
 
 
 
-void GPIOInit (void)
-{
-    LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 6);                              /* 初始化GPIO AHB时钟           */
-	LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 7);                              /* 初始化SWM  AHB时钟           */
-
-	gpio_init_beep();
-	gpio_init_led();
-	gpio_init_rf433m_mode();
-	gpio_init_wifi();
-#if 0
-
-	LPC_GPIO_PORT->DIR[0] &= ~KEY;
-
-
-	LPC_SYSCON->PINTSEL[0] = 0x1;                                       /* 设置P0.1为中断触发引脚       */
-    LPC_PININT->ISEL   &= ~0x1;                                         /* 边沿触发                     */
-    LPC_PININT->SIENF   |=  0x1;                                         /* 下边沿触发                   */
-    
-    NVIC_EnableIRQ(PIN_INT0_IRQn);                                      /* 打开PININT0中断              */
-#endif
-}
-
-
-
-void gpio_ctrl(uint32_t gpio, uint32_t value)
-{
-	if (value == GPIO_LOW)
-		LPC_GPIO_PORT->PIN[0] &= ~gpio;
-	if (value == GPIO_HIGH)
-		LPC_GPIO_PORT->PIN[0] |=  gpio;
-}
-
-void gpio_dir(uint32_t gpio, uint32_t dir)
-{
-	if (dir == GPIO_INPUT)
-		LPC_GPIO_PORT->DIR[0] &= ~gpio;
-	if (dir == GPIO_OUTPUT)
-		LPC_GPIO_PORT->DIR[0] |=  gpio;
-}
 
 
 
@@ -181,11 +124,7 @@ void uart2_thread(void)
 
 /*TDD: Testing Driven Develop*/
 
-void gpio_init_beep(void)
-{
-	gpio_dir(GPIO_BEEP, GPIO_OUTPUT);
-    gpio_ctrl(GPIO_BEEP, GPIO_LOW);
-}
+
 
 void hwapi01_beep_crtl(u8 on_off)
 {
@@ -202,17 +141,6 @@ void test_hwapi01_beep_crtl(void)
 	delay_ms(1000);
 	hwapi01_beep_crtl(0);//beep off
 	delay_ms(1000);
-}
-
-
-void gpio_init_led(void)
-{
-	gpio_dir(GPIO_LED1, GPIO_OUTPUT);
-	gpio_dir(GPIO_LED2, GPIO_OUTPUT);
-	gpio_dir(GPIO_LED3, GPIO_OUTPUT);
-    gpio_ctrl(GPIO_LED1, GPIO_LOW);
-	gpio_ctrl(GPIO_LED2, GPIO_HIGH);
-	gpio_ctrl(GPIO_LED3, GPIO_HIGH);
 }
 
 
@@ -256,14 +184,6 @@ void test_hwapi02_led_ctrl(void)
 	delay_ms(100);
 }
 
-void gpio_init_rf433m_mode(void)
-{
-	gpio_dir(GPIO_M0, GPIO_OUTPUT);
-	gpio_dir(GPIO_M1, GPIO_OUTPUT);
-
-	gpio_ctrl(GPIO_M1, GPIO_LOW);
-	gpio_ctrl(GPIO_M0, GPIO_HIGH);//wakeup mode, to wakeup the lock
-}
 
 #define RF_NORMAL_MODE 0
 #define RF_WAKEUP_MODE 1
@@ -356,20 +276,7 @@ void test_uart2_send(void)
 	delay_ms(1);
 }
 
-void gpio_init_wifi(void)
-{
-	gpio_dir(GPIO_WIFI_FACTORY, GPIO_OUTPUT);
-	gpio_dir(GPIO_WIFI_RESET, GPIO_OUTPUT);
-	gpio_dir(GPIO_WIFI_MODE_WPS, GPIO_OUTPUT);
-	gpio_dir(GPIO_WIFI_SLEEP, GPIO_OUTPUT);
 
-	gpio_ctrl(GPIO_WIFI_FACTORY, GPIO_HIGH);
-	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
-	gpio_ctrl(GPIO_WIFI_MODE_WPS, GPIO_HIGH);
-	gpio_ctrl(GPIO_WIFI_SLEEP, GPIO_HIGH);
-
-	//test_hwapi04_wifi_reset();
-}
 
 // invoke this reset function if you need to reconnect server
 // 考虑时间是否该用定时器实现

@@ -177,7 +177,7 @@ void UART2SendDisable(void)
 
 void UART2Init (void)
 {
-    LPC_SWM->PINASSIGN[2] &= ~( 0xFFFF << 16 );
+    LPC_SWM->PINASSIGN[2] &= ~( (uint32_t)0xFFFF << 16 );
     LPC_SWM->PINASSIGN[2] |=  ( 16 << 16 );                              /* P0.16 ~ UART2_TXD             */
     LPC_SWM->PINASSIGN[2] |=  ( 10 << 24 );                              /* P0.10 ~ UART2_RXD             */
 

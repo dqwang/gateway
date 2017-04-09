@@ -161,7 +161,7 @@ void gprs_user_data(void)
 
 void gprs_close_tcp(void)
 {
-	u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
+	//u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
 }
 
 void gprs_init(void)

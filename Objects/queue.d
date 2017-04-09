@@ -19,3 +19,6 @@
 .\objects\queue.o: .\include\gprs.h
 .\objects\queue.o: .\include\errno.h
 .\objects\queue.o: .\include\timer.h
+.\objects\queue.o: .\include\wifi.h
+.\objects\queue.o: .\include\rf433m.h
+.\objects\queue.o: .\include\led.h

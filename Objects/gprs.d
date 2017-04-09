@@ -18,3 +18,6 @@
 .\objects\gprs.o: .\include\gprs.h
 .\objects\gprs.o: .\include\errno.h
 .\objects\gprs.o: .\include\timer.h
+.\objects\gprs.o: .\include\wifi.h
+.\objects\gprs.o: .\include\rf433m.h
+.\objects\gprs.o: .\include\led.h

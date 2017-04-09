@@ -13,5 +13,8 @@
 #include "gprs.h"
 #include "errno.h"
 #include "timer.h"
+#include "wifi.h"
+#include "rf433m.h"
+#include "led.h"
 
 #endif

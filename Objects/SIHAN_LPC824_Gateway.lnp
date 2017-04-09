@@ -3,9 +3,13 @@
 ".\objects\uart.o"
 ".\objects\startup_lpc82x.o"
 ".\objects\timer.o"
+".\objects\gpio.o"
 ".\objects\main.o"
 ".\objects\queue.o"
 ".\objects\gprs.o"
+".\objects\rf433m.o"
+".\objects\wifi.o"
+".\objects\led.o"
 --ro-base 0x00000000 --entry 0x00000000 --rw-base 0x10000000 --entry Reset_Handler --first __Vectors --strict --summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
 --list ".\Listings\SIHAN_LPC824_Gateway.map" -o .\Objects\SIHAN_LPC824_Gateway.axf

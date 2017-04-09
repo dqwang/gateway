@@ -8,4 +8,9 @@
 #define GPIO_OUTPUT 1
 #define GPIO_INPUT 0
 
+
+void GPIOInit (void);
+void gpio_dir(uint32_t gpio, uint32_t dir);
+void gpio_ctrl(uint32_t gpio, uint32_t value);
+
 #endif
