@@ -9,9 +9,12 @@
 .\objects\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
-.\objects\main.o: .\LPC8xx\uart.h
+.\objects\main.o: .\include\uart.h
 .\objects\main.o: .\include\main.h
 .\objects\main.o: .\include\type.h
 .\objects\main.o: .\include\packet_def.h
 .\objects\main.o: .\include\gpio.h
 .\objects\main.o: .\include\queue.h
+.\objects\main.o: .\include\gprs.h
+.\objects\main.o: .\include\errno.h
+.\objects\main.o: .\include\timer.h

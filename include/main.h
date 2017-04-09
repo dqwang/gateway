@@ -10,17 +10,8 @@
 #include "gpio.h"
 #include "queue.h"
 #include "packet_def.h"
-
-
-typedef enum ERRNO{
-	E_QUEUE_EMPTY = -2,
-	E_QUEUE_FULL = -1,
-	EOK = 0,
-	E_INVALID_PACKET,
-	E_NULL_POINTER,
-	E_INVALID_CMD,
-}errno_t;
-
-
+#include "gprs.h"
+#include "errno.h"
+#include "timer.h"
 
 #endif

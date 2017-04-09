@@ -10,9 +10,12 @@
 .\objects\queue.o: .\LPC8xx\system_LPC8xx.h
 .\objects\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
-.\objects\queue.o: .\LPC8xx\uart.h
+.\objects\queue.o: .\include\uart.h
 .\objects\queue.o: .\include\main.h
 .\objects\queue.o: .\include\type.h
 .\objects\queue.o: .\include\packet_def.h
 .\objects\queue.o: .\include\gpio.h
 .\objects\queue.o: .\include\queue.h
+.\objects\queue.o: .\include\gprs.h
+.\objects\queue.o: .\include\errno.h
+.\objects\queue.o: .\include\timer.h
