@@ -22,3 +22,5 @@
 .\objects\gpio.o: .\include\wifi.h
 .\objects\gpio.o: .\include\rf433m.h
 .\objects\gpio.o: .\include\led.h
+.\objects\gpio.o: LPC8xx\EEPROM\iap.h
+.\objects\gpio.o: LPC8xx\EEPROM\eeprom.h

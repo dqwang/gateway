@@ -2,6 +2,8 @@
 
 /*TDD: Testing Driven Develop*/
 
+
+
 int main(void)
 {
 	//delay_ms(1000);
@@ -16,19 +18,27 @@ int main(void)
 	UART2Init();
 	
 	queue_init();
-	//hwapi04_wifi_reset();
+	
 
+	
 	hwapi07_rf433m_get_addr_channel();
+
+
 	lock_addr_channel_array_init();
 	
 	//gprs_init();
+
 	//test_hwapi05_wifi_factory();
 
-	//hwapi07_rf433m_mode3_prepare();
+	
 	
 	//hwapi08_rf433m_mode1_prepare();
 
+	
 	hwapi08_rf433m_mode0_prepare();
+
+	
+	//test_eeprom();
 	
 	
     while (1) {
@@ -58,6 +68,8 @@ int main(void)
 		//test_hwapi07_rf433m_set_config();
 		//test_rf433m_mode1_transport();
 		//test_rf433m_mode0_transport();
+
+		system_work_led_thread();
 
 		handle_server_packet_thread();
 		handle_lock_packet_thread();

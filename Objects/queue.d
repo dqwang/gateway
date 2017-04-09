@@ -22,3 +22,5 @@
 .\objects\queue.o: .\include\wifi.h
 .\objects\queue.o: .\include\rf433m.h
 .\objects\queue.o: .\include\led.h
+.\objects\queue.o: LPC8xx\EEPROM\iap.h
+.\objects\queue.o: LPC8xx\EEPROM\eeprom.h

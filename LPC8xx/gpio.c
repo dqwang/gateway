@@ -18,10 +18,6 @@ void gpio_dir(uint32_t gpio, uint32_t dir)
 		LPC_GPIO_PORT->DIR[0] |=  gpio;
 }
 
-
-
-
-
 void GPIOInit (void)
 {
     LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 6);                              /* ³õÊ¼»¯GPIO AHBÊ±ÖÓ           */

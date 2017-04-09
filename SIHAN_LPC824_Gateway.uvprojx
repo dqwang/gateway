@@ -423,6 +423,16 @@
               <FileType>2</FileType>
               <FilePath>.\LPC8xx\startup\startup_lpc82x.s</FilePath>
             </File>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\LPC8xx\timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\LPC8xx\gpio.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -437,6 +447,31 @@
               <FileName>queue.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\user_code\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>gprs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_code\gprs.c</FilePath>
+            </File>
+            <File>
+              <FileName>rf433m.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_code\rf433m.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_code\wifi.c</FilePath>
+            </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_code\led.c</FilePath>
+            </File>
+            <File>
+              <FileName>gw_protocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user_code\gw_protocol.c</FilePath>
             </File>
           </Files>
         </Group>

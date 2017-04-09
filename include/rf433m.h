@@ -11,6 +11,9 @@
 #define RF_SLEEP_MODE 2
 #define RF_CONFIG_MODE 3
 
+#define RF_GET_GATEWAY_ADDR_SUCCESS 0xaa
+#define RF_GET_GATEWAY_ADDR_FAIL 0xbb
+
 void gpio_init_rf433m_mode(void);
 
 void hwapi03_rf433m_mode(u8 mode);

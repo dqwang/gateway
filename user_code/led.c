@@ -64,6 +64,7 @@ void hwapi02_led3_ctrl(u8 on_off)
 }
 
 
+
 void test_hwapi02_led_ctrl(void)
 {
 	hwapi02_led1_ctrl(1);//led on

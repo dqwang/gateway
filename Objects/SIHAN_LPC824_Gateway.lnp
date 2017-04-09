@@ -4,6 +4,8 @@
 ".\objects\startup_lpc82x.o"
 ".\objects\timer.o"
 ".\objects\gpio.o"
+".\objects\eeprom.o"
+".\objects\iap.o"
 ".\objects\main.o"
 ".\objects\queue.o"
 ".\objects\gprs.o"

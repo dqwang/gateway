@@ -22,3 +22,5 @@
 .\objects\main.o: .\include\wifi.h
 .\objects\main.o: .\include\rf433m.h
 .\objects\main.o: .\include\led.h
+.\objects\main.o: LPC8xx\EEPROM\iap.h
+.\objects\main.o: LPC8xx\EEPROM\eeprom.h

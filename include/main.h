@@ -21,5 +21,7 @@
 #include "led.h"
 #include "gw_protocol.h"
 
+#include "iap.h"
+#include "eeprom.h"
 
 #endif

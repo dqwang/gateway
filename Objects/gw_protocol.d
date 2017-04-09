@@ -22,3 +22,5 @@
 .\objects\gw_protocol.o: .\include\wifi.h
 .\objects\gw_protocol.o: .\include\rf433m.h
 .\objects\gw_protocol.o: .\include\led.h
+.\objects\gw_protocol.o: LPC8xx\EEPROM\iap.h
+.\objects\gw_protocol.o: LPC8xx\EEPROM\eeprom.h

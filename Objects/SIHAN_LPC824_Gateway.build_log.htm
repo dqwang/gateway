@@ -22,7 +22,7 @@ Dialog DLL:      TARMCM1.DLL V1.08.00.0
  
 <h2>Project:</h2>
 Z:\sihan\lpc\gateway\SIHAN_LPC824_Gateway.uvprojx
-Project File Date:  04/08/2017
+Project File Date:  04/09/2017
 
 <h2>Output:</h2>
 Rebuild target 'gateway'
@@ -31,6 +31,8 @@ compiling uart.c...
 assembling startup_lpc82x.s...
 compiling timer.c...
 compiling gpio.c...
+compiling EEPROM.c...
+compiling IAP.c...
 compiling main.c...
 compiling queue.c...
 compiling gprs.c...
@@ -39,7 +41,7 @@ compiling wifi.c...
 compiling led.c...
 compiling gw_protocol.c...
 linking...
-Program Size: Code=5780 RO-data=224 RW-data=12 ZI-data=4364  
+Program Size: Code=6968 RO-data=224 RW-data=20 ZI-data=5428  
 FromELF: creating hex file...
 ".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 0 Warning(s).
 
@@ -68,7 +70,7 @@ ROMTableAddr = 0xE00FF003
 Target info:
 ------------
 Device: LPC824M201JHI33
-VTarget = 2.743V
+VTarget = 2.737V
 State of Pins: 
 TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
 Hardware-Breakpoints: 4
@@ -80,135 +82,67 @@ Full Chip Erase Done.
 Programming Done.
 Verify OK.
 Application running ...
-".\Objects\SIHAN_LPC824_Gateway.axf" - 5 Error(s), 4 Warning(s).
-
-<h2>Collection of Component include folders:</h2>
-  Z:\sihan\lpc\gateway\RTE
-  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
-
-<h2>Collection of Component Files used:</h2>
-Target not created.
-folders:</h2>
-  Z:\sihan\lpc\gateway\RTE
-  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
-
-<h2>Collection of Component Files used:</h2>
-Target not created.
-n "delay_ms" declared implicitly
-        delay_ms(3500);//must be more than 3s
-user_code\main.c(409): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1);
-user_code\main.c(420): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(250);//must be more than 200ms
-user_code\main.c(426): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1000);
-user_code\main.c(435): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1);
-user_code\main.c(443): warning:  #223-D: function "delay_ms" declared implicitly
-                delay_ms(10);//waiting until the packet done
-user_code\main.c(494): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(500);
-user_code\main.c(545): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1000);//if test this in main-loop, the delay must be needed.
-user_code\main.c(553): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1000);
-user_code\main.c(603): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1000);
-user_code\main.c(625): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(1000);
-user_code\main.c(716): warning:  #223-D: function "delay_ms" declared implicitly
-                delay_ms(WIFI_RECV_TIME);/*wifi 模块全功耗模式大概10ms接收完毕，若低功耗模式可能需要200ms*/
-user_code\main.c(848): warning:  #223-D: function "delay_ms" declared implicitly
-                delay_ms(20);/*TBD*/
-user_code\main.c(905): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(10000);
-user_code\main.c(922): warning:  #223-D: function "delay_ms" declared implicitly
-        delay_ms(100);//system poweron,for gprs
-user_code\main.c(925): warning:  #223-D: function "WKTInit" declared implicitly
-        WKTInit();
-user_code\main.c: 27 warnings, 1 error
-compiling queue.c...
-.\include\gprs.h(40): error:  #20: identifier "errno_t" is undefined
-  errno_t check_gprs_cmd_ack(u8 *ok, u8 *ack_from_gprs);
-user_code\queue.c: 0 warnings, 1 error
-compiling gprs.c...
-.\include\gprs.h(40): error:  #20: identifier "errno_t" is undefined
-  errno_t check_gprs_cmd_ack(u8 *ok, u8 *ack_from_gprs);
-user_code\gprs.c(164): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
-        u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
-user_code\gprs.c: 1 warning, 1 error
-".\Objects\SIHAN_LPC824_Gateway.axf" - 5 Error(s), 29 Warning(s).
-
-<h2>Collection of Component include folders:</h2>
-  Z:\sihan\lpc\gateway\RTE
-  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
-
-<h2>Collection of Component Files used:</h2>
-Target not created.
-de\gprs.c(103): warning:  #223-D: function "delay_ms" declared implicitly
-                delay_ms(3000);
-user_code\gprs.c(122): warning:  #223-D: function "delay_ms" declared implicitly
-                delay_ms(1000);
-user_code\gprs.c(141): warning:  #223-D: function "delay_ms" declared implicitly
-                delay_ms(1000);
-user_code\gprs.c(162): warning:  #177-D: variable "close_tcp_cmd" was declared but never referenced
-        u8 close_tcp_cmd[]="AT+CIPCLOSE\r\n";
-user_code\gprs.c: 8 warnings, 1 error
-".\Objects\SIHAN_LPC824_Gateway.axf" - 5 Error(s), 36 Warning(s).
-
-<h2>Collection of Component include folders:</h2>
-  Z:\sihan\lpc\gateway\RTE
-  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
-
-<h2>Collection of Component Files used:</h2>
-Target not created.
-mplicitly
-        UART1Init();
-user_code\main.c(1195): warning:  #223-D: function "UART2Init" declared implicitly
-        UART2Init();
-user_code\main.c: 41 warnings, 0 errors
-compiling queue.c...
-linking...
-Program Size: Code=6820 RO-data=224 RW-data=12 ZI-data=4364  
-FromELF: creating hex file...
-".\Objects\SIHAN_LPC824_Gateway.axf" - 0 Error(s), 42 Warning(s).
-
-<h2>Collection of Component include folders:</h2>
-  Z:\sihan\lpc\gateway\RTE
-  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
-
-<h2>Collection of Component Files used:</h2>
-
-        uart0_sendbuf(cmd3_buf, sizeof(cmd3_buf));
-user_code\main.c(852): warning:  #223-D: function "uart0_sendbuf" declared implicitly
-        uart0_sendbuf(buf,sizeof(buf));
-user_code\main.c(918): warning:  #223-D: function "uart2_sendbuf" declared implicitly
-        send2server(sp.sp0, SERVER_PACKET_SIZE);
-user_code\main.c(945): warning:  #223-D: function "uart0_sendbuf" declared implicitly
-        send2lock(lpkt.lpkt0, sizeof(lpkt_u));
-user_code\main.c(979): error:  #20: identifier "uart2" is undefined
-        if (uart2.rflag == 1){
-user_code\main.c(1061): warning:  #223-D: function "uart2_sendbuf" declared implicitly
-        send2server(sp.sp0, sizeof(sp_u));
-user_code\main.c(1076): warning:  #223-D: function "uart0_sendbuf" declared implicitly
-        send2lock(lp.lpkt0, LOCK_PACKET_SIZE);
-user_code\main.c(1111): error:  #20: identifier "uart0" is undefined
-        if (uart0.rflag == 1){
-user_code\main.c(1169): warning:  #223-D: function "uart2_sendbuf" declared implicitly
-        send2server(sp_u.sp0, sizeof(sp_u));
-user_code\main.c(1192): warning:  #223-D: function "UART0Init" declared implicitly
-        UART0Init();
-user_code\main.c(1193): warning:  #223-D: function "UART1Init" declared implicitly
-        UART1Init();
-user_code\main.c(1194): warning:  #223-D: function "UART2Init" declared implicitly
-        UART2Init();
-user_code\main.c: 41 warnings, 17 errors
-compiling queue.c...
-".\Objects\SIHAN_LPC824_Gateway.axf" - 17 Error(s), 42 Warning(s).
-
-<h2>Collection of Component include folders:</h2>
-  Z:\sihan\lpc\gateway\RTE
-  C:\Keil_v5\ARM\PACK\Keil\LPC800_DFP\1.1.0\Device\Include
-
-<h2>Collection of Component Files used:</h2>
-Target not created.
+Load "Z:\\sihan\\lpc\\gateway\\Objects\\SIHAN_LPC824_Gateway.axf" 
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
+Set JLink Project File to "Z:\sihan\lpc\gateway\JLinkSettings.ini"
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.91b, compiled Sep 15 2014 09:17:56
+Firmware: J-Link ARM V8 compiled Nov 28 2014 13:44:46
+Hardware: V8.00
+Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFULL 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BC11477
+* JLink Info: Found Cortex-M0 r0p1, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: LPC824M201JHI33
+VTarget = 2.724V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Full Chip Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
+AN_LPC824_Gateway.axf" 
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
+Set JLink Project File to "Z:\sihan\lpc\gateway\JLinkSettings.ini"
+* JLink Info: Device "CORTEX-M0+" selected (0 KB flash, 0 KB RAM).
+ 
+JLink info:
+------------
+DLL: V4.91b, compiled Sep 15 2014 09:17:56
+Firmware: J-Link ARM V8 compiled Nov 28 2014 13:44:46
+Hardware: V8.00
+Feature(s) : RDI,FlashDL,FlashBP,JFlash,GDBFULL 
+ 
+* JLink Info: Found SWD-DP with ID 0x0BC11477
+* JLink Info: Found Cortex-M0 r0p1, Little endian.
+* JLink Info: FPUnit: 4 code (BP) slots and 0 literal slots
+ROMTableAddr = 0xE00FF003
+ 
+Target info:
+------------
+Device: LPC824M201JHI33
+VTarget = 2.737V
+State of Pins: 
+TCK: 0, TDI: 0, TDO: 0, TMS: 1, TRES: 1, TRST: 1
+Hardware-Breakpoints: 4
+Software-Breakpoints: 8192
+Watchpoints:          2
+JTAG speed: 2000 kHz
+ 
+Full Chip Erase Done.
+Programming Done.
+Verify OK.
+Application running ...
