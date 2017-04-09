@@ -191,3 +191,16 @@ void gprs_reconnect_server(void)
 }
 
 
+void test_gprs(void)
+{
+	if (uart1.rflag == 1 && gprs.gprs_flag == GPRS_FLAG8_USER_DATA){
+		delay_ms(10);//waiting until the packet done
+
+		uart1_sendbuf(uart1.rbuf, uart1.rindex);
+
+		uart1.rflag = 0;
+		uart1.rindex = 0;
+	}
+}
+
+

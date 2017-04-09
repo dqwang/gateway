@@ -227,3 +227,87 @@ void uart2_sendbuf(u8* buf, u16 size)
 	uart2.sindex = 0;
 	UART2SendEnable();
 }
+
+
+
+void test_uart0_echo(void)
+{
+	if (uart0.rflag == 1){
+		//delay_ms(10);//waiting until the packet done
+		uart0_sendbuf(uart0.rbuf, uart0.rindex);
+		CLEAR_UART_RECV(&uart0);
+	}
+}
+
+
+void test_uart1_echo(void)
+{
+	if (uart1.rflag == 1){
+		//delay_ms(10);//waiting until the packet done
+
+		uart1_sendbuf(uart1.rbuf, uart1.rindex);
+		CLEAR_UART_RECV(&uart1);
+	}
+}
+
+void test_uart2_echo(void)
+{
+	if (uart2.rflag == 1){
+		delay_ms(10);//waiting until the packet done
+		uart2_sendbuf(uart2.rbuf, uart2.rindex);
+
+		CLEAR_UART_RECV(&uart2);
+	}
+}
+
+void test_uart0_send(void)
+{
+	u8 sbuf[1]={0x01};
+	uart0_sendbuf(sbuf,sizeof(sbuf));
+	delay_ms(1);
+}
+
+void test_uart1_send(void)
+{
+	u8 sbuf[1]={0x01};
+	uart1_sendbuf(sbuf,sizeof(sbuf));
+	delay_ms(1);
+}
+
+void test_uart2_send(void)
+{
+	u8 sbuf[1]={0x01};
+	uart2_sendbuf(sbuf,sizeof(sbuf));
+	delay_ms(1);
+}
+
+void uart0_thread(void)
+{
+	if (uart0.rflag == 1){
+		delay_ms(20);//waiting until the packet done
+		
+		send2server(uart0.rbuf,uart0.rindex);		
+		CLEAR_UART_RECV(&uart0);
+		
+	}
+}
+
+
+void uart2_thread(void)
+{
+	if (uart2.rflag == 1){
+		/*wifi 模块全功耗模式大概10ms接收完毕，若低功耗模式可能需要200ms*/
+		#if 1//delay mode
+		delay_ms(WIFI_RECV_TIME);//waiting until the packet done
+		send2lock(uart2.rbuf, uart2.rindex);	
+
+		delay_ms(10);
+				
+		CLEAR_UART_RECV(&uart2);	
+		#else//ring mode
+		//if (uart2.rindex >){}
+		
+		#endif
+	}
+}
+

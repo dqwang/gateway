@@ -3,7 +3,7 @@
 #include "main.h"
 
 #include "type.h"
-#include "packet_def.h"
+#include "gw_protocol.h"
 
 
 #define UART0_BPS   115200/*433M*/
@@ -43,6 +43,8 @@ void uart2_sendbuf(u8* buf, u16 size);
 
 void CLEAR_UART_RECV(uart_t *p);
 #define CLEAR_UART(p) memset(p,0x0,sizeof(uart_t))
+#define CLEAR_TYPE(p, type) memset(p, 0x00, sizeof(type))
+
 
 void UART0RecvEnable(void);
 

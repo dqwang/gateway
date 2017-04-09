@@ -9,6 +9,12 @@
 void gpio_init_beep(void);
 void gpio_init_led(void);
 
+void hwapi01_beep_crtl(u8 on_off);
+void hwapi02_led1_ctrl(u8 on_off);
+void hwapi02_led2_ctrl(u8 on_off);
+void hwapi02_led3_ctrl(u8 on_off);
 
+void test_hwapi01_beep_crtl(void);
+void test_hwapi02_led_ctrl(void);
 
 #endif

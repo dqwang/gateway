@@ -12,5 +12,10 @@
 
 
 void gpio_init_wifi(void);
+void hwapi04_wifi_reset(void);
+void hwapi05_wifi_factory(void);
+
+void hwapi06_rj45_reset(void);
+
 
 #endif

@@ -30,4 +30,6 @@ int front(Queue *Q);
 
 void Enqueue(Queue *Q,int element);
 
+void queue_init(void);
+
 #endif

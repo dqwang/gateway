@@ -1,6 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "main.h"
+
+Queue sq;//server queue
+Queue lq;//lock queue
+
+int sq_buf[SERVER_PACKET_NUM_MAX];
+int lq_buf[LOCK_PACKET_NUM_MAX];
+
 
 
 /* crateQueue function takes argument the maximum number of elements the Queue can hold, creates
@@ -93,3 +98,10 @@ void Enqueue(Queue *Q,int element)
         Q->elements[Q->rear] = element;
     } 
 }
+
+void queue_init(void)
+{
+	createQueue(SERVER_PACKET_NUM_MAX, &sq, sq_buf);
+	createQueue(LOCK_PACKET_NUM_MAX, &lq, lq_buf);
+}
+
