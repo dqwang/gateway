@@ -1,9 +1,9 @@
-#include "main.h"
+  #include "main.h"
 
 /*TDD: Testing Driven Develop*/
 
 
-
+ 
 int main(void)
 {
 	//delay_ms(1000);
@@ -18,15 +18,20 @@ int main(void)
 	UART2Init();
 	
 	queue_init();
-	
 
+	hwapi01_beep_cnt(1,100);
+	gprs_init();
+	hwapi04_wifi_disable();//debug
+	hwapi01_beep_cnt(2,100);
+	
+	
 	
 	hwapi07_rf433m_get_addr_channel();
 
 
 	lock_addr_channel_array_init();
 	
-	//gprs_init();
+	
 
 	//test_hwapi05_wifi_factory();
 
@@ -37,7 +42,7 @@ int main(void)
 	
 	hwapi08_rf433m_mode0_prepare();
 
-	
+	//hwapi07_rf433m_mode3_prepare();
 	//test_eeprom();
 	
 	
@@ -69,10 +74,16 @@ int main(void)
 		//test_rf433m_mode1_transport();
 		//test_rf433m_mode0_transport();
 
-		system_work_led_thread();
+		//test_heartbeat_without_timer_irq();
 
-		handle_server_packet_thread();
+		//system_work_led_thread();
+
+		handle_server_packet_thread();//wifi or gprs
+		
 		handle_lock_packet_thread();
+
+		heartbeat_thread();
+		
     }
 }
 

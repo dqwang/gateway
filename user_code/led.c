@@ -78,3 +78,18 @@ void test_hwapi02_led_ctrl(void)
 }
 
 
+void hwapi01_beep_cnt(u8 cnt, u16 ms)
+{
+	u8 i=0;
+
+	for (i=0;i<cnt;i++){
+		hwapi01_beep_crtl(ON);
+		delay_ms(ms);
+		hwapi01_beep_crtl(OFF);
+		//if (cnt > 1)
+			delay_ms(ms);
+	}
+}
+
+
+

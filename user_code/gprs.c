@@ -155,7 +155,7 @@ void gprs_user_data(void)
 		gprs.gprs_flag = GPRS_FLAG8_USER_DATA;
 		//next to uart1_thread()
 
-
+		hwapi02_led3_ctrl(ON);
 	}
 }
 
@@ -167,6 +167,9 @@ void gprs_close_tcp(void)
 void gprs_init(void)
 {
 	CLEAR_GPRS(&gprs);
+
+	gpio_dir(GPIO_GPRS_RESET, GPIO_OUTPUT);
+	gpio_ctrl(GPIO_GPRS_RESET, GPIO_HIGH);
 	gprs_reg();
 	gprs_close_echo();
 	gprs_att();

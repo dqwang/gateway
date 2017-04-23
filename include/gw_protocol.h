@@ -10,7 +10,7 @@
 /*************************************
  define the server packet offset
 *************************************/
-
+#define LOCK_HEADER_5FE6 0x5FE6
 #define TAIL_ENTER 0X0D0A
 
 #define SERVER_PACKET_NUM_MAX 24
@@ -37,28 +37,69 @@
 #define LOCK_CRC_SIZE 2
 
 
+enum cmd{
+	//cmd server --> lock
+	CMD_UPDATE_HEARTBEAT_TIME  = 0x13,
+	CMD_UPDATE_ROOM_ADDR = 0x19,
+	CMD_UPDATE_ROOM_STATUS = 0x22,
+	CMD_UPDATE_ICCARD_WHITELIST = 0X25,
+	CMD_UPDATE_ICCARD_KEY = 0x28,
+	CMD_ROMOTE_OPEN_DOOR = 0X31,
+	
+	//ack from server to lock
+	ACK_REPORT_OPENDOOR = 0x15,
+	ACK_REPORT_LOW_VOLTAGE = 0x17,
+
+
+	//cmd lock-->server
+
+	CMD_REPORT_HEARTBEAT_TIME = 0X12,
+	CMD_REPORT_OPENDOOR = 0X14,
+	CMD_REPORT_LOW_VOLTAGE = 0X16,
+
+	CMD_REQUEST_ROOM_ADDR =0X18,
+	CMD_REQUEST_ROOM_STATUS= 0X21,
+	CMD_REQUEST_ICCARD_WHITELIST = 0X24,
+	CMD_REQUEST_ICCARD_KEY = 0X27,
+
+	CMD_REPORT_TOUCH = 0X30,
+	
+	//ack lock -->server
+	ACK_UPDATE_ROOM_ADDR = 0X20,
+	ACK_UPDATE_ROOM_STATUS = 0X22,
+	ACK_UPDATE_ICCARD_WHITELIST = 0X26,
+	ACK_UPDATE_ICCARD_KEY=0X29,
+	
+};
+
 
 /*----------------------------------------------------------------------------*/
 
 #pragma pack (1)/*byte alignment*/
 
-typedef struct lock_protocol_payload1{
-	u8 x1;
-	u8 x2;
-	u8 reserved[1];	
-}lpp_cmd1;
 
-typedef struct lock_protocol_payload2{
-	u8 x1[1];
-	u8 x2[1];
-	u8 reserved[1];
-}lpp_cmd2;
+#define ROOM_ADDR_SIZE 8
+#define TIME_SIZE 6
+
+#define PAYLOAD_LEN_HEARTBEAT_TIME 20
+typedef struct lock_protocol_payload1{
+	u8 time1[TIME_SIZE];
+	u8 heartlen2;
+	u8 cardver3;
+	u8 cardnum4;
+	u8 keyver5;
+	u8 livestate6;
+	u8 room_addr7[ROOM_ADDR_SIZE];
+	u8 wait_time8;
+	u8 reserved9[2];	
+}lpp_heartbeat_time_t;
 
 
 typedef union{
 	u8       lpp0[LOCK_DATA_PAYLOAD_SIZE_MAX];
-	lpp_cmd1 lpp1;
-	lpp_cmd2 lpp2;
+	//lpp_cmd1 lpp1;
+	//lpp_cmd2 lpp2;
+	lpp_heartbeat_time_t lpp_CMD_REPORT_HEARTBEAT_TIME;
 	//todo in lock
 }lpp_u;
 
@@ -254,8 +295,19 @@ typedef union{
 
 /*----------------------------------------------------------------------------*/
 
+typedef struct {
+	u8 flag;
+	u16 timer;
+}todo;
 
-#define send2server(buf, len) uart2_sendbuf(buf, len)
+/*----------------------------------------------------------------------------*/
+
+
+
+//#define send2server(buf, len) uart2_sendbuf(buf, len)//wifi
+
+#define send2server(buf, len) uart1_sendbuf(buf, len)//gprs
+
 #define send2lock(buf, len)	uart0_sendbuf(buf, len);
 
 
@@ -263,5 +315,10 @@ void lock_addr_channel_array_init(void);
 
 void handle_lock_packet_thread(void);
 void handle_server_packet_thread(void);
+
+u16 crc16(u8 *puchMsg,  u8 usDataLen);
+void send_heartbeat_to_server(void);
+void heartbeat_thread(void);
+void test_heartbeat_without_timer_irq(void);
 
 #endif

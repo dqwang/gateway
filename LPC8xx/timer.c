@@ -2,6 +2,8 @@
 
 
 volatile u16 led_timer = 0;
+timer_t heartbeat_timer;
+timer_t heartbeat_server_timer;
 
 
 void delay_ms (uint32_t ulTime)
@@ -29,6 +31,14 @@ void WKTInit (void)
 
 	LPC_WKT->COUNT = 750 * 1;// 1ms
 	NVIC_EnableIRQ(WKT_IRQn);
+
+	led_timer = 0;
+	
+	heartbeat_timer.cnt = 0;
+	heartbeat_timer.flag = 0;
+
+	heartbeat_server_timer.cnt = 0;
+	heartbeat_server_timer.flag = 0;
 }
 
 
@@ -39,6 +49,21 @@ void WKT_IRQHandler (void)
 		
 		LPC_WKT->COUNT = 750 * 1;// 1ms
 		led_timer++;
+		heartbeat_timer.cnt++;
+		if (heartbeat_timer.cnt >= SYSTEM_HEARTBEAT_TIME){
+			heartbeat_timer.cnt = 0;
+			heartbeat_timer.flag = 1;
+		}
+
+/*
+		if (heartbeat_server_timer.flag == 1){
+			heartbeat_server_timer.cnt++;
+			if (heartbeat_server_timer.cnt >= SERVER_HEARTBEAT_TIMEOUT){
+				heartbeat_server_timer.flag = 2;
+				heartbeat_server_timer.cnt=0;
+			}
+		}
+*/		
     }
 }
 

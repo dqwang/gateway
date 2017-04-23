@@ -14,6 +14,9 @@ void hwapi02_led1_ctrl(u8 on_off);
 void hwapi02_led2_ctrl(u8 on_off);
 void hwapi02_led3_ctrl(u8 on_off);
 
+void hwapi01_beep_cnt(u8 cnt, u16 ms);
+
+
 void test_hwapi01_beep_crtl(void);
 void test_hwapi02_led_ctrl(void);
 

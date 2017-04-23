@@ -111,7 +111,7 @@ void hwapi07_rf433m_get_addr_channel(void)
 			}
 		}
 		//debug log
-		send2server(gw_addr_channel.rfac0, sizeof(rfac_u));
+		//send2server(gw_addr_channel.rfac0, sizeof(rfac_u));
 		
 		CLEAR_UART_RECV(&uart0);
 	}else{

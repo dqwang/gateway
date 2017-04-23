@@ -24,6 +24,13 @@ void hwapi04_wifi_reset(void)
 	gpio_ctrl(GPIO_WIFI_RESET, GPIO_HIGH);
 }
 
+
+void hwapi04_wifi_disable(void)
+{
+	gpio_ctrl(GPIO_WIFI_RESET, GPIO_LOW);
+}
+
+
 void test_hwapi04_wifi_reset(void)
 {
 	delay_ms(1000);
