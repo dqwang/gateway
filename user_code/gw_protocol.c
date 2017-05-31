@@ -176,7 +176,7 @@ void hwapi09_handle_packet_from_server(u8 *in_buf)
 		//debug
 		//hwapi01_beep_cnt(1, 100);
 		hwapi02_led2_ctrl(ON);
-		return;
+		//return;
 	}
 	
 	ret = hwapi09_encode_packet_to_lock(&sp);
@@ -226,6 +226,7 @@ void handle_server_packet_thread(void)
 			hwapi09_handle_packet_from_server(uart1.rbuf + front(&sq));
 			Dequeue(&sq);
 			delay_ms(RF_SEND_DELAY_TIME);//send
+			
 			hwapi02_led2_ctrl(OFF);// when recv heartbeat, led2 flash once
 		}
 		

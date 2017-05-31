@@ -82,7 +82,7 @@ int main(void)
 		
 		handle_lock_packet_thread();
 
-		heartbeat_thread();
+		//heartbeat_thread();
 		
     }
 }
